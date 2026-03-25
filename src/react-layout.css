@@ -1,0 +1,32 @@
+/* Fixes for React rendering root elements */
+html, body, #root {
+  height: 100%;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 100vh;
+}
+
+/* ── Ticker styles from old project missing in Vanilla ────────────── */
+.ticker { height: 38px; background: var(--bg-card-solid); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 12px; gap: 0; overflow-x: auto; white-space: nowrap; flex-shrink: 0; z-index: 100; }
+.ticker::-webkit-scrollbar { display: none; }
+.ticker-live { display: flex; align-items: center; gap: 6px; padding-right: 14px; border-right: 1px solid var(--border-color); margin-right: 2px; }
+.ticker-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+.ticker-time { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+.ticker-item { display: flex; align-items: center; gap: 8px; padding: 0 14px; border-right: 1px solid var(--border-color); font-size: 12px; height: 100%; }
+.ticker-item:last-child { border-right: none; }
+.ticker-label { color: var(--text-muted); font-weight: 500; }
+.ticker-val   { color: var(--text-main);  font-weight: 600; font-variant-numeric: tabular-nums; }
+.ticker-up    { color: var(--green); font-size: 11px; }
+.ticker-dn    { color: var(--red);   font-size: 11px; }
+.ticker-progress { height: 2px; background: var(--border-color); flex-shrink: 0; width: 60px; border-radius: 1px; overflow: hidden; margin-left: auto; }
+.ticker-progress-fill { height: 100%; background: var(--accent); border-radius: 1px; transition: width 1s linear; }
