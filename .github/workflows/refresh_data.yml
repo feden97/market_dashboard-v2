@@ -1,0 +1,39 @@
+# Refresh dashboard data daily and commit so the React/Vite app serves updated JSON and charts.
+name: Refresh dashboard data (V2)
+
+on:
+  schedule:
+    - cron: '30 20 * * *' # Daily at 20:30 UTC / 16:30 US Eastern
+  workflow_dispatch: # Allow manual trigger from GitHub Actions UI
+
+jobs:
+  refresh-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Generate fresh data into public/data
+        run: |
+          python scripts/build_data.py --out-dir public/data
+        env:
+          TZ: UTC
+
+      - name: Commit and push updated public/data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/data/
+          git diff --staged --quiet || (git commit -m "chore: refresh dashboard data [automated]" && git push)

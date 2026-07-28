@@ -1,4 +1,4 @@
-import { EntityIcon, getIcon, QUESTION_MARK_SVG } from '../utils/icons'
+import { EntityIcon, QUESTION_MARK_SVG } from '../utils/icons'
 
 function TerminalRow({ name, rate, rateLabel = 'TNA', subLabel, pills = [], isBest, dateInfo, rateColor, tooltipText = '' }) {
   return (
@@ -46,9 +46,12 @@ export default function TabTasas({ tasas, displayMode }) {
   if (!tasas || tasas.loading) {
     return (
       <div className="panel-ancho">
+        <h2 style={{ color: 'var(--text-main)', margin: '0 0 20px', fontSize: '18px', fontWeight: 600 }}>
+          Tasas de Interés y Rendimientos
+        </h2>
         <div className="terminal-container">
           <div className="terminal-header"><div className="terminal-title">Cargando tasas...</div></div>
-          <div className="loading-placeholder">Obteniendo datos de la API...</div>
+          <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '30px', fontSize: '13px' }}>Obteniendo datos de la API...</div>
         </div>
       </div>
     )
@@ -58,93 +61,100 @@ export default function TabTasas({ tasas, displayMode }) {
 
   return (
     <div className="panel-ancho">
-      <h2 style={{ marginBottom: '24px' }}>
+      <h2 style={{ color: 'var(--text-main)', margin: '0 0 20px', fontSize: '18px', fontWeight: 600 }}>
         Tasas de Interés y Rendimientos
       </h2>
 
       {displayMode === 'pesos' && (
-        <div style={{ animation: 'fadeIn 0.4s ease forwards', maxWidth: '1100px', margin: '0 auto' }}>
+        <div id="tasas-pesos" style={{ display: 'block', animation: 'fadeIn 0.4s ease forwards', maxWidth: '1100px', margin: '0 auto', padding: '0 20px' }}>
           {/* Cuentas remuneradas */}
           <div className="terminal-container">
             <div className="terminal-header">
               <div className="terminal-title">💳 Cuentas Remuneradas y Billeteras</div>
-              <div className="terminal-subtitle">TNA Fija, garantizada · Ingreso y retiro inmediato · Plazo mínimo 1 día</div>
+              <div className="terminal-subtitle">TNA Fija, garantizada. Ingreso y retiro de saldo inmediato. Plazo mínimo 1 día</div>
             </div>
-            {cuentasRemuneradas?.length
-              ? cuentasRemuneradas.map((acc, i) => {
-                  const pills = []
-                  if (acc.limit) pills.push({ cls: 'pill-limit', text: acc.limit })
-                  return (
-                    <TerminalRow
-                      key={acc.name}
-                      name={acc.name}
-                      rate={(acc.tna * 100).toFixed(2) + '%'}
-                      subLabel={acc.subLabel}
-                      tooltipText={acc.tooltip}
-                      pills={pills}
-                      isBest={i === 0}
-                      dateInfo={acc.date ? `TNA vigente desde el ${acc.date.split('-').reverse().join('/')}` : ''}
-                    />
-                  )
-                })
-              : <div className="loading-placeholder">Sin datos disponibles</div>
-            }
+            <div id="ars-accounts-container">
+              {cuentasRemuneradas?.length
+                ? cuentasRemuneradas.map((acc, i) => {
+                    const pills = []
+                    if (acc.limit) pills.push({ cls: 'pill-limit', text: acc.limit })
+                    return (
+                      <TerminalRow
+                        key={acc.name}
+                        name={acc.name}
+                        rate={(acc.tna * 100).toFixed(2) + '%'}
+                        subLabel={acc.subLabel}
+                        tooltipText={acc.tooltip}
+                        pills={pills}
+                        isBest={i === 0}
+                        dateInfo={acc.date ? `TNA vigente desde el ${acc.date.split('-').reverse().join('/')}` : ''}
+                      />
+                    )
+                  })
+                : <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '30px', fontSize: '13px' }}>Cargando cuentas...</div>
+              }
+            </div>
           </div>
 
           {/* Plazo fijo */}
           <div className="terminal-container">
             <div className="terminal-header">
               <div className="terminal-title">🏦 Plazo Fijo</div>
-              <div className="terminal-subtitle">TNA Fija, garantizada · Plazo mínimo 30 días</div>
+              <div className="terminal-subtitle">TNA Fija, garantizada. Plazo mínimo 30 días</div>
             </div>
-            {plazosFijos?.length
-              ? plazosFijos.map((pf, i) => (
-                  <TerminalRow
-                    key={pf.name}
-                    name={pf.name}
-                    rate={(pf.rate * 100).toFixed(2) + '%'}
-                    subLabel="Plazo Fijo"
-                    isBest={i === 0}
-                    pills={[]}
-                    dateInfo={pf.date ? `Vigente desde: ${pf.date.split('-').reverse().join('/')}` : ''}
-                  />
-                ))
-              : <div className="loading-placeholder">Sin datos disponibles</div>
-            }
+            <div id="ars-pf-list">
+              {plazosFijos?.length
+                ? plazosFijos.map((pf, i) => (
+                    <TerminalRow
+                      key={pf.name}
+                      name={pf.name}
+                      rate={(pf.rate * 100).toFixed(2) + '%'}
+                      subLabel="Plazo Fijo"
+                      isBest={i === 0}
+                      pills={[]}
+                      dateInfo={pf.date ? `Vigente desde: ${pf.date.split('-').reverse().join('/')}` : ''}
+                    />
+                  ))
+                : <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '30px', fontSize: '13px' }}>Cargando...</div>
+              }
+            </div>
           </div>
 
           {/* FCI */}
           <div className="terminal-container">
             <div className="terminal-header">
               <div className="terminal-title">📊 Fondos Comunes de Inversión</div>
-              <div className="terminal-subtitle">TNA Variable · Retiro T+0 o T+1</div>
+              <div className="terminal-subtitle">TNA Variable. Retiro de saldo variable (inmediato o T+1)</div>
             </div>
-            {fci?.length
-              ? fci.map((f, i) => (
-                  <TerminalRow
-                    key={f.name}
-                    name={f.name}
-                    rate={(f.rate * 100).toFixed(2) + '%'}
-                    rateLabel="TNA aprox."
-                    subLabel={f.desc}
-                    isBest={i === 0}
-                    pills={[]}
-                    dateInfo={f.dateStr}
-                    rateColor="var(--orange)"
-                  />
-                ))
-              : <div className="loading-placeholder">Sin datos disponibles</div>
-            }
+            <div id="ars-fci-container">
+              {fci?.length
+                ? fci.map((f, i) => (
+                    <TerminalRow
+                      key={f.name}
+                      name={f.name}
+                      rate={(f.rate * 100).toFixed(2) + '%'}
+                      rateLabel="TNA aprox."
+                      subLabel={f.desc}
+                      isBest={i === 0}
+                      pills={[]}
+                      dateInfo={f.dateStr}
+                      rateColor="var(--orange)"
+                    />
+                  ))
+                : <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '30px', fontSize: '13px' }}>Cargando FCI...</div>
+              }
+            </div>
           </div>
         </div>
       )}
 
       {displayMode === 'cripto' && yields && (
-        <div style={{ animation: 'fadeIn 0.4s ease forwards', width: '100%' }}>
-          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14 }}>
-            Tasas APY ofrecidas por plataformas cripto argentinas. La mejor tasa por moneda se destaca en verde.
+        <div id="tasas-cripto" style={{ display: 'block', animation: 'fadeIn 0.4s ease forwards', maxWidth: '100%', margin: '0 auto', overflow: 'hidden' }}>
+          <div className="tasas-section-title" style={{ marginBottom: '14px' }}>🪙 Rendimientos en Stablecoins</div>
+          <div className="tasas-section-sub">
+            Tasas APY ofrecidas por plataformas cripto argentinas. La mejor tasa de cada moneda se destaca en verde.
           </div>
-          <div className="terminal-container">
+          <div className="yield-matrix-container" id="yield-matrix-wrapper">
             <div className="data-table-wrapper">
               <table className="yield-matrix">
                 <thead>
@@ -165,8 +175,10 @@ export default function TabTasas({ tasas, displayMode }) {
                     <tr key={coin}>
                       <td>
                         <div className="matrix-coin-cell">
-                          <div className="matrix-coin-icon" dangerouslySetInnerHTML={{ __html: getIcon(coin) || '' }} />
-                          <span style={{ fontWeight: 600 }}>{coin}</span>
+                          <div className="matrix-coin-icon">
+                            <EntityIcon name={coin} size={24} />
+                          </div>
+                          <span>{coin}</span>
                         </div>
                       </td>
                       {yields.entities.map((ent, entIdx) => {

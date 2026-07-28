@@ -193,7 +193,7 @@ export default function SpreadChart({ historicalFiat, liveData, base, setBase })
         <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Spread CCL vs {BASE_LABELS[base]} (YTD)
         </div>
-        <div className="spread-pills">
+        <div className="base-pills" id="base-currency-pills">
           {Object.entries(BASE_LABELS).map(([val, lbl]) => (
             <button
               key={val}

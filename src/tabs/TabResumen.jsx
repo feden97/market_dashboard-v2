@@ -1,16 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { formatARS, varInfo, calcIpcStats, getLast12IPC } from '../utils/format'
-import { getBandaForToday, getGaugePosition, getZoneInfo } from '../utils/bandas'
+import { formatARS, calcIpcStats, getLast12IPC } from '../utils/format'
 import { EntityIcon } from '../utils/icons'
 import InflacionChart from '../charts/InflacionChart'
 
-function VarBadge({ value }) {
-  if (value == null) return <span style={{ color: 'var(--text-muted)' }}>—</span>
-  const { cls, text } = varInfo(value)
-  return <span className={`badge ${cls}`}>{text}</span>
-}
-
-export default function TabResumen({ snapshot, liveData, bandas, liveInflation }) {
+export default function TabResumen({ snapshot, liveData, liveInflation }) {
   const [ipcStats, setIpcStats] = useState(null)
 
   useEffect(() => {
@@ -32,161 +25,185 @@ export default function TabResumen({ snapshot, liveData, bandas, liveInflation }
   const usdt = liveData?.usdt
 
   const allPrices = fiat ? [
-    { name: 'Oficial', price: fiat.oficial?.price, color: '#378ADD' },
-    { name: 'MEP',     price: fiat.mep?.price,     color: '#1D9E75' },
-    { name: 'CCL',     price: fiat.ccl?.price,     color: '#EF9F27' },
-    { name: 'Blue',    price: fiat.blue?.price,    color: '#D85A30' },
-    { name: 'USDT',    price: usdt?.maxVenta,       color: '#7F77DD' },
+    { name: 'Oficial', price: fiat.oficial?.price },
+    { name: 'MEP',     price: fiat.mep?.price },
+    { name: 'CCL',     price: fiat.ccl?.price },
+    { name: 'Blue',    price: fiat.blue?.price },
+    { name: 'USDT',    price: usdt?.maxVenta },
   ].filter(d => d.price > 0) : []
   const cheapest = allPrices.length ? allPrices.reduce((a, b) => a.price < b.price ? a : b) : null
 
   const purchasingPower = ipcStats
     ? new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(10000 * (1 + ipcStats.acum12m / 100))
-    : null
+    : '--'
 
   const macro = snapshot?.argentina_macro
   const holidays = macro?.holidays ?? []
 
   return (
     <div className="panel-ancho">
-      <div className="radar-header" style={{ marginBottom: '24px' }}>
-        <h2 className="macro-title" style={{ fontSize: '24px', margin: 0 }}>Radar de Inversión</h2>
-        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Oportunidades destacadas en tiempo real</span>
+      {/* Section header */}
+      <div className="radar-header">
+        <span className="radar-tag">🚀 RADAR DE INVERSIÓN</span>
+        <h2 className="radar-subtitle">Oportunidades destacadas del mercado</h2>
       </div>
 
+      {/* 4 metric cards */}
       <div className="radar-grid">
         {/* Dólar más barato */}
         <div className="radar-card">
-          <div className="radar-card-icon" style={{ background: 'rgba(55, 138, 221, 0.1)', color: '#378ADD' }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <div className="radar-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
             </svg>
           </div>
           <div className="radar-card-body">
             <span className="radar-card-label">DÓLAR MÁS BARATO</span>
-            <span className="radar-card-value font-mono-bold">
-              {cheapest ? formatARS(cheapest.price) : '...'}
+            <span id="cheapest-dollar-val" className="radar-card-value">
+              {cheapest ? formatARS(cheapest.price) : '$0,00'}
             </span>
-            <span className="radar-card-entity terminal-name">{cheapest?.name ?? '...'}</span>
+            <span id="cheapest-dollar-name" className="radar-card-entity">
+              {cheapest?.name ?? '...'}
+            </span>
           </div>
         </div>
 
-        {/* Mejor cuenta */}
+        {/* Mejor cuenta remunerada */}
         <div className="radar-card">
-          <div className="radar-card-icon">
-            <EntityIcon name={liveData?._bestYield?.name} size={32} />
+          <div className="radar-card-icon" style={{ background: 'transparent', padding: 0 }}>
+            {liveData?._bestYield?.name ? (
+              <EntityIcon name={liveData._bestYield.name} size={44} />
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2" />
+                <line x1="2" y1="10" x2="22" y2="10" />
+              </svg>
+            )}
           </div>
           <div className="radar-card-body">
             <span className="radar-card-label">MEJOR CUENTA (TNA)</span>
-            <span className="radar-card-value font-mono-bold" style={{ color: 'var(--green)' }}>
-              {liveData?._bestYield?.rate ? `${liveData._bestYield.rate}%` : '...'}
+            <span id="best-yield-val" className="radar-card-value">
+              {liveData?._bestYield?.rate ? `${liveData._bestYield.rate}%` : '0,00%'}
             </span>
-            <span className="radar-card-entity terminal-name">{liveData?._bestYield?.name ?? '...'}</span>
+            <span id="best-yield-name" className="radar-card-entity">
+              {liveData?._bestYield?.name ?? '...'}
+            </span>
           </div>
         </div>
 
         {/* Mejor plazo fijo */}
         <div className="radar-card">
-          <div className="radar-card-icon" style={{ background: 'rgba(112, 129, 255, 0.1)', color: 'var(--rate-color)' }}>
-            <EntityIcon name={liveData?._bestPF?.name} size={32} />
+          <div className="radar-card-icon" style={{ background: 'transparent', padding: 0 }}>
+            {liveData?._bestPF?.name ? (
+              <EntityIcon name={liveData._bestPF.name} size={44} />
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 21h18M3 10h18M5 10v11M19 10v11M9 10v11M15 10v11M12 3l9 7H3l9-7z" />
+              </svg>
+            )}
           </div>
           <div className="radar-card-body">
             <span className="radar-card-label">MEJOR PLAZO FIJO (TNA)</span>
-            <span className="radar-card-value font-mono-bold" style={{ color: 'var(--rate-color)' }}>
-              {liveData?._bestPF?.rate ? `${liveData._bestPF.rate}%` : '...'}
+            <span id="best-pf-val" className="radar-card-value">
+              {liveData?._bestPF?.rate ? `${liveData._bestPF.rate}%` : '0,00%'}
             </span>
-            <span className="radar-card-entity terminal-name">{liveData?._bestPF?.name ?? '...'}</span>
+            <span id="best-pf-name" className="radar-card-entity">
+              {liveData?._bestPF?.name ?? '...'}
+            </span>
           </div>
         </div>
 
-        {/* Mejor APY */}
+        {/* Mejor APY stablecoins */}
         <div className="radar-card">
-          <div className="radar-card-icon" style={{ background: 'rgba(255, 184, 0, 0.1)', color: 'var(--orange)' }}>
-            <EntityIcon name={liveData?._bestCrypto?.name} size={32} />
+          <div className="radar-card-icon" style={{ background: 'transparent', padding: 0 }}>
+            {liveData?._bestCrypto?.name ? (
+              <EntityIcon name={liveData._bestCrypto.name} size={44} />
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 6v12M15 9.5H10.5a2.5 2.5 0 0 0 0 5H14a2.5 2.5 0 0 1 0 5H9" />
+              </svg>
+            )}
           </div>
           <div className="radar-card-body">
             <span className="radar-card-label">MEJOR APY STABLES</span>
-            <span className="radar-card-value font-mono-bold" style={{ color: 'var(--orange)' }}>
-              {liveData?._bestCrypto?.rate ? `${liveData._bestCrypto.rate}%` : '...'}
+            <span id="best-crypto-val" className="radar-card-value">
+              {liveData?._bestCrypto?.rate ? `${liveData._bestCrypto.rate}%` : '0,00%'}
             </span>
-            <div className="flex items-center gap-2">
-              <span className="radar-card-entity terminal-name">{liveData?._bestCrypto?.name ?? '...'}</span>
-              {liveData?._bestCrypto?.coin && <span className="badge badge-orange">{liveData._bestCrypto.coin}</span>}
+            <span id="best-crypto-name" className="radar-card-entity">
+              {liveData?._bestCrypto?.name ?? '...'}
+            </span>
+            <div id="best-crypto-detail" className="radar-card-detail">
+              {liveData?._bestCrypto?.coin ? `(${liveData._bestCrypto.coin})` : ''}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="radar-bottom-grid" style={{ marginTop: '24px' }}>
-        <div className="macro-card inflation-panel" style={{ marginBottom: 0 }}>
-          <div className="flex items-center gap-3" style={{ marginBottom: '24px' }}>
-            <div className="radar-card-icon" style={{ width: 40, height: 40, background: 'rgba(239, 159, 39, 0.1)', color: 'var(--orange)' }}>
+      {/* Bottom row: Inflación + Feriados */}
+      <div className="radar-bottom-grid">
+        {/* Inflation panel */}
+        <div className="radar-bottom-card inflation-panel">
+          <div className="radar-bottom-header" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+            <h3 className="radar-bottom-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
               </svg>
-            </div>
-            <div>
-              <h3 className="macro-title" style={{ margin: 0, fontSize: '18px' }}>Inflación mensual (IPC)</h3>
-              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Variación de precios minoristas (INDEC)</span>
-            </div>
+              Inflación mensual (IPC)
+            </h3>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+              Cuánto subieron los precios cada mes según el INDEC.
+            </span>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {ipcStats && (
-              <div className="inf-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-                <div className="inf-kpi-card" style={{ background: 'var(--bg-card-solid)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                  <div className="radar-card-label" style={{ marginBottom: '4px' }}>ÚLTIMO MES</div>
-                  <div className="radar-card-value" style={{ color: 'var(--red)', fontSize: '24px' }}>{(ipcStats.lastMonth).toFixed(1).replace('.',',')}%</div>
-                </div>
-                <div className="inf-kpi-card" style={{ background: 'var(--bg-card-solid)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                  <div className="radar-card-label" style={{ marginBottom: '4px' }}>PROMEDIO 12M</div>
-                  <div className="radar-card-value" style={{ color: 'var(--yellow)', fontSize: '24px' }}>{ipcStats.avg12m.toFixed(1).replace('.',',')}%</div>
-                </div>
-                <div className="inf-kpi-card" style={{ background: 'var(--bg-card-solid)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                  <div className="radar-card-label" style={{ marginBottom: '4px' }}>ACUM. 12M</div>
-                  <div className="radar-card-value" style={{ color: 'var(--orange)', fontSize: '24px' }}>{ipcStats.acum12m.toFixed(1).replace('.',',')}%</div>
+          <div className="radar-bottom-body" style={{ padding: '16px' }}>
+            <div className="inf-kpi-grid">
+              <div className="inf-kpi-card">
+                <div className="inf-kpi-label">ÚLTIMO MES</div>
+                <div id="inf-last-month" className="inf-kpi-value text-red">
+                  {ipcStats ? `${ipcStats.lastMonth.toFixed(1).replace('.', ',')}%` : '--'}
                 </div>
               </div>
-            )}
+              <div className="inf-kpi-card">
+                <div className="inf-kpi-label">PROMEDIO 12M</div>
+                <div id="inf-avg-12m" className="inf-kpi-value text-yellow">
+                  {ipcStats ? `${ipcStats.avg12m.toFixed(1).replace('.', ',')}%` : '--'}
+                </div>
+              </div>
+              <div className="inf-kpi-card">
+                <div className="inf-kpi-label">ACUM. 12M</div>
+                <div id="inf-acum-12m" className="inf-kpi-value text-orange">
+                  {ipcStats ? `${ipcStats.acum12m.toFixed(1).replace('.', ',')}%` : '--'}
+                </div>
+              </div>
+            </div>
 
-            <div className="inf-chart-container" style={{ height: '240px' }}>
+            <div className="inf-chart-container">
               <InflacionChart ipcHistory={macro?.ipc_history} liveInflation={liveInflation} />
             </div>
 
-            {purchasingPower && (
-              <div style={{ 
-                padding: '16px', background: 'rgba(255, 255, 255, 0.03)', 
-                borderRadius: '12px', fontSize: '13px', color: 'var(--text-muted)',
-                border: '1px dashed var(--border-color)'
-              }}>
-                📌 Algo que costaba $10.000 hace un año, hoy cuesta <strong style={{ color: 'var(--text-main)', fontStyle: 'normal' }}>{purchasingPower}</strong>.
-              </div>
-            )}
+            <div className="inf-footer-card">
+              📌 <span id="inf-purchasing-power">
+                Algo que costaba $10.000 hace un año, hoy cuesta <strong>{purchasingPower}</strong>.
+              </span>
+            </div>
           </div>
         </div>
 
-        <div className="macro-card" style={{ marginBottom: 0 }}>
-          <h3 className="macro-title" style={{ fontSize: '18px', marginBottom: '20px' }}>🏖️ Próximos Feriados</h3>
-          {holidays.length > 0 ? (
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {holidays.map((h, i) => (
-                <li key={i} style={{ 
-                  padding: '14px 0', 
-                  borderBottom: i < holidays.length - 1 ? '1px solid var(--border-color)' : 'none',
-                  color: 'var(--text-main)',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
-                }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', opacity: 0.6 }} />
-                  <span className="terminal-name" style={{ fontWeight: 500 }}>{h}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-             <div className="loading-placeholder">No hay feriados próximos</div>
-          )}
+        {/* Upcoming holidays */}
+        <div className="radar-bottom-card">
+          <div className="radar-bottom-header">
+            <h3 className="radar-bottom-title">🏖️ PRÓXIMOS FERIADOS</h3>
+          </div>
+          <ul id="feriados-list" className="macro-list-premium">
+            {holidays.length > 0 ? (
+              holidays.map((h, i) => (
+                <li key={i}>{h}</li>
+              ))
+            ) : (
+              <li className="text-muted">Cargando datos...</li>
+            )}
+          </ul>
         </div>
       </div>
     </div>

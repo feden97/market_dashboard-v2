@@ -1,173 +1,3 @@
-/*
-  Tailwind v4 — registered with @theme to expose design tokens as utilities.
-  All existing CSS below is preserved. New Tailwind utilities are additive only.
-*/
-@import "tailwindcss" layer(utilities);
-
-@theme {
-    /* Backgrounds */
-    --color-body: #0A0F1C;
-    --color-panel: #0F1926;
-    --color-card: rgba(15, 25, 38, 0.4);
-    --color-card-hover: rgba(20, 35, 55, 0.6);
-
-    /* Borders */
-    --color-border: rgba(205, 214, 227, 0.1);
-    --color-border-hover: rgba(205, 214, 227, 0.25);
-
-    /* Text */
-    --color-main: #E2E8F0;
-    --color-muted: #94A3B8;
-
-    /* Accents */
-    --color-accent: #00FF6A;
-    --color-accent-glow: rgba(0, 255, 106, 0.1);
-    --color-rate: #7081FF;
-    /* ── Palette ────────────────────────────────────────────────── */
-    --accent: #00ff6a;
-    /* "Live" green */
-    --accent-glow: rgba(0, 255, 106, 0.4);
-
-    --bg-body: #0a0c10;
-    --bg-card: #12151c;
-    --bg-card-hover: #1b1f28;
-    --bg-card-solid: #151921;
-
-    --border-color: rgba(255, 255, 255, 0.06);
-    --border-hover: rgba(255, 255, 255, 0.12);
-
-    --text-main: #f0f2f5;
-    --text-muted: #8b949e;
-    --text-dim: #484f58;
-
-    --up-color: #00ff6a;
-    --down-color: #ff4d4d;
-
-    /* ── Typography ─────────────────────────────────────────────── */
-    --font-heading: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    --font-body: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace;
-
-    --radius-sm: 6px;
-    --radius-md: 10px;
-    --radius-lg: 16px;
-    --radius-xl: 20px;
-
-    --card-padding: 24px;
-    --card-padding-sm: 16px;
-
-    --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
-    --shadow-subtle: 0 2px 12px rgba(0, 0, 0, 0.25);
-}
-
-/* ── Base ─────────────────────────────────────────────────────────── */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    background-color: var(--bg-body);
-    color: var(--text-main);
-    font-family: var(--font-body);
-    font-size: 14px;
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-    font-feature-settings: 'pnum' on, 'lnum' on;
-    overflow-x: hidden;
-    background-attachment: fixed;
-}
-
-h1,
-h2,
-h3,
-h4,
-.nav-tab,
-.btn,
-.macro-title,
-.terminal-name {
-    font-family: var(--font-heading);
-}
-
-/* Monospace reinforcement for ALL data/numbers */
-.mono,
-.mono-bold,
-.mono-rate,
-.price-value,
-.variation-badge,
-.gauge-value,
-.metric-value,
-.terminal-data,
-.data-table td:not(:first-child),
-.crypto-list-item-price,
-.crypto-list-item-var,
-.counter-value,
-.number {
-    font-family: var(--font-mono) !important;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -0.01em;
-}
-
-.mono-bold {
-    font-weight: 700;
-}
-
-.mono-regular {
-    font-weight: 500;
-    font-size: 0.95em;
-}
-
-/* Names and labels should always be Geist */
-.terminal-name,
-.data-table td:first-child,
-.tab-pane h2,
-.macro-title {
-    font-family: var(--font-heading) !important;
-    font-weight: 600;
-}
-
-h2 {
-    font-size: 20px !important;
-    letter-spacing: -0.03em;
-    margin-bottom: 24px !important;
-    color: var(--text-main);
-}
-
-/* ── Standardized Table Columns ────────────────────────────────────── */
-.col-name {
-    width: auto;
-    min-width: 140px;
-}
-
-.col-price {
-    width: 110px;
-    text-align: right;
-}
-
-.col-var {
-    width: 85px;
-    text-align: right;
-}
-
-.col-brecha {
-    width: 95px;
-    text-align: right;
-}
-
-.data-table th,
-.data-table td {
-    padding: 12px 10px !important;
-}
-
-.data-table th {
-    text-transform: uppercase;
-    font-size: 11px;
-    color: var(--text-muted);
-    letter-spacing: 0.05em;
-    font-weight: 700;
-}
-
 /* ============================================================
    Market Dashboard — styles.css
    Refactored: removed redundant utilities, consolidated mobile
@@ -211,13 +41,9 @@ h2 {
     --select-arrow: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
 
     /* Radius */
-    --radius-sm: 6px;
-    --radius-md: 10px;
-    --radius-lg: 16px;
-    --radius-xl: 20px;
-
-    /* Padding */
-    --card-padding: 24px;
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 6px;
 
     /* Typography */
     --font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -259,12 +85,6 @@ h2 {
 
     /* Unified Table Typography */
     --table-font-size: clamp(10px, 0.85cqi, 13px);
-}
-
-@media (max-width: 768px) {
-    :root {
-        --card-padding: 16px;
-    }
 }
 
 /* ── Light theme overrides ─────────────────────────────────── */
@@ -344,7 +164,6 @@ body {
     flex-direction: column;
     height: 100dvh;
     background-color: var(--bg-body);
-    background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0, 255, 106, 0.04), transparent);
     color: var(--text-main);
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
@@ -423,30 +242,17 @@ body {
     border-radius: var(--radius-sm);
     cursor: pointer;
     white-space: nowrap;
-    position: relative;
 }
 
 .nav-tab:hover {
     color: var(--text-main);
-    background-color: transparent;
+    background-color: var(--bg-card-hover);
 }
 
 .nav-tab.active {
     color: var(--nav-active-color);
     background-color: transparent;
     font-weight: 600;
-}
-
-.nav-tab.active::after {
-    content: '';
-    position: absolute;
-    bottom: -1px;
-    left: 10px;
-    right: 10px;
-    height: 2px;
-    background: var(--accent);
-    border-radius: 2px 2px 0 0;
-    box-shadow: 0 0 8px rgba(0, 255, 106, 0.5);
 }
 
 .sub-tabs-container {
@@ -550,28 +356,13 @@ body {
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(6px);
+        transform: translateY(8px);
     }
 
     to {
         opacity: 1;
         transform: translateY(0);
     }
-}
-
-@keyframes shimmer {
-    0% {
-        background-position: -200% 0;
-    }
-
-    100% {
-        background-position: 200% 0;
-    }
-}
-
-.skeleton {
-    background: var(--bg-card-hover);
-    border-radius: var(--radius-sm);
 }
 
 .panel-ancho {
@@ -587,9 +378,9 @@ body {
 /* ── Cards ─────────────────────────────────────────────────── */
 .macro-card {
     background-color: var(--bg-card);
+    padding: 20px;
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-color);
-    padding: var(--card-padding);
     box-shadow: var(--card-shadow);
     display: flex;
     flex-direction: column;
@@ -598,7 +389,6 @@ body {
 
 .macro-card:hover {
     border-color: var(--border-hover);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 }
 
 .macro-grid {
@@ -696,12 +486,10 @@ body {
     gap: 14px;
     position: relative;
     overflow: hidden;
-    transition: transform 0.2s ease;
 }
 
 .radar-card:hover {
     border-color: var(--border-hover);
-    transform: translateY(-2px);
 }
 
 .radar-card-icon {
@@ -869,26 +657,6 @@ body {
     text-transform: uppercase;
     letter-spacing: 1px;
     margin: 0;
-}
-
-/* ── Layout Grids ─────────────────────────────────── */
-.tables-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
-    gap: 24px;
-}
-
-@media (max-width: 950px) {
-    .tables-grid {
-        grid-template-columns: 1fr;
-        gap: 32px;
-    }
-}
-
-.data-table-wrapper {
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
 }
 
 /* ── Inflation dashboard ───────────────────────────────────── */
@@ -1493,55 +1261,45 @@ body {
 .terminal-container {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    /* Ensure content follows radius */
+    border-radius: var(--radius-md);
+    overflow: visible;
     margin-bottom: 24px;
-    box-shadow: var(--card-shadow);
+    box-shadow: var(--shadow-subtle);
 }
 
 .terminal-header {
-    padding: var(--card-padding);
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--border-color);
+    padding: 12px 16px;
+    border-bottom: 2px solid var(--accent);
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 6px;
-    background: rgba(255, 255, 255, 0.02);
+    gap: 4px;
 }
 
 .terminal-title {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 1px;
     color: var(--accent);
 }
 
 .terminal-subtitle {
     font-size: 11px;
     color: var(--text-muted);
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
+    line-height: 1.4;
 }
 
 .terminal-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 14px var(--card-padding);
+    padding: 14px 16px;
     border-bottom: 1px solid var(--border-color);
     flex-wrap: wrap;
     min-width: 0;
     width: 100%;
     position: relative;
-    transition: background 0.15s ease;
-}
-
-.terminal-row:hover {
-    background-color: var(--bg-card-hover);
 }
 
 .terminal-row:last-child {
@@ -1549,8 +1307,9 @@ body {
 }
 
 .terminal-highlight {
-    background: rgba(16, 185, 129, 0.07);
-    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.15);
+    background: rgba(16, 185, 129, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.2);
+    border-radius: 2px;
 }
 
 .terminal-entity {
@@ -1607,12 +1366,11 @@ body {
 }
 
 .mono-rate {
-    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+    font-family: var(--font-family);
     font-weight: 700;
     font-size: 18px;
     color: var(--green);
     letter-spacing: -0.5px;
-    font-variant-numeric: tabular-nums;
 }
 
 .terminal-rate-label {
@@ -1651,8 +1409,8 @@ body {
 .badge-green {
     background-color: rgba(0, 255, 106, 0.1);
     color: var(--green);
-    border-radius: 999px;
-    padding: 2px 8px;
+    border-radius: 4px;
+    padding: 2px 6px;
     font-weight: 600;
     font-size: 11px;
     border: 1px solid rgba(0, 255, 106, 0.2);
@@ -1661,8 +1419,8 @@ body {
 .badge-red {
     background-color: rgba(255, 68, 68, 0.1);
     color: var(--red);
-    border-radius: 999px;
-    padding: 2px 8px;
+    border-radius: 4px;
+    padding: 2px 6px;
     font-weight: 600;
     font-size: 11px;
     border: 1px solid rgba(255, 68, 68, 0.2);
@@ -1763,51 +1521,14 @@ body {
 
 .data-summary-row {
     margin-top: 20px;
+    padding: 12px;
+    background-color: var(--bg-card-solid);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
     display: flex;
     justify-content: space-around;
-    text-align: center;
-    font-size: 12px;
+    font-size: 13px;
     color: var(--text-muted);
-    font-weight: 500;
-    line-height: 1.6;
-}
-
-/* ── Spread Chart Pills ────────────────────────────────────── */
-.spread-pills {
-    display: flex;
-    background: rgba(0, 0, 0, 0.25);
-    border: 1px solid var(--border-color);
-    padding: 2px;
-    border-radius: 10px;
-    gap: 0px;
-}
-
-[data-theme="light"] .spread-pills {
-    background: rgba(0, 0, 0, 0.05);
-}
-
-.base-pill {
-    background: transparent;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 8px;
-    color: var(--text-muted);
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-family: var(--font-heading);
-}
-
-.base-pill.active {
-    background: var(--bg-card-hover);
-    color: var(--accent);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.base-pill:hover:not(.active) {
-    color: var(--text-main);
 }
 
 /* ── Update Bar Redesign ────────────────────────────────────── */
@@ -1822,30 +1543,23 @@ body {
 .progress-bar-bg {
     flex: 1;
     background-color: var(--border-color);
-    height: 3px;
+    height: 4px;
     border-radius: 4px;
     overflow: hidden;
-    position: relative;
 }
 
 .progress-bar-fill {
     height: 100%;
     width: 100%;
-    background: linear-gradient(90deg, var(--accent) 0%, #7DFFD1 100%);
-    box-shadow: 0 0 6px rgba(0, 255, 106, 0.4);
-    transition: transform 1s linear;
-    transform-origin: left;
+    background: linear-gradient(90deg, var(--accent), #00e65b);
+    transition: width 1s linear;
 }
 
 .update-time-container {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     flex-shrink: 0;
-    background: var(--bg-card-hover);
-    border: 1px solid var(--border-color);
-    border-radius: 999px;
-    padding: 3px 10px 3px 6px;
 }
 
 #last-updated-time {
@@ -1858,12 +1572,27 @@ body {
 }
 
 .live-dot {
-    width: 7px;
-    height: 7px;
+    width: 6px;
+    height: 6px;
     background-color: var(--accent);
     border-radius: 50%;
-    box-shadow: 0 0 5px rgba(0, 255, 106, 0.5);
-    flex-shrink: 0;
+    box-shadow: 0 0 8px var(--accent);
+    animation: livePulse 2s infinite;
+}
+
+@keyframes livePulse {
+    0% {
+        opacity: 0.4;
+        transform: scale(0.8);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+    100% {
+        opacity: 0.4;
+        transform: scale(0.8);
+    }
 }
 
 .gauge-arc {
@@ -2440,53 +2169,23 @@ body {
 /* ─── Real-time Price Flash Animations ───────────────────────────────────── */
 
 @keyframes flashGreen {
-    0% {
-        background-color: transparent;
-        color: inherit;
-    }
-
-    10% {
-        background-color: rgba(16, 185, 129, 0.5);
-        color: #fff;
-    }
-
-    50% {
-        background-color: rgba(16, 185, 129, 0.2);
-    }
-
-    100% {
-        background-color: transparent;
-        color: inherit;
-    }
+    0% { background-color: transparent; color: inherit; }
+    10% { background-color: rgba(16, 185, 129, 0.5); color: #fff; }
+    50% { background-color: rgba(16, 185, 129, 0.2); }
+    100% { background-color: transparent; color: inherit; }
 }
 
 @keyframes flashRed {
-    0% {
-        background-color: transparent;
-        color: inherit;
-    }
-
-    10% {
-        background-color: rgba(239, 68, 68, 0.5);
-        color: #fff;
-    }
-
-    50% {
-        background-color: rgba(239, 68, 68, 0.2);
-    }
-
-    100% {
-        background-color: transparent;
-        color: inherit;
-    }
+    0% { background-color: transparent; color: inherit; }
+    10% { background-color: rgba(239, 68, 68, 0.5); color: #fff; }
+    50% { background-color: rgba(239, 68, 68, 0.2); }
+    100% { background-color: transparent; color: inherit; }
 }
 
 .price-cell {
     transition: color 0.3s ease;
-    border-radius: 4px;
-    /* for the background flash to look softer */
-    padding: 2px 4px !important;
-    /* slight padding for the background flash */
+    border-radius: 4px; /* for the background flash to look softer */
+    padding: 2px 4px !important; /* slight padding for the background flash */
 }
 
 .flash-up {
