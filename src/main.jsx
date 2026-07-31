@@ -19,6 +19,14 @@ class ErrorBoundary extends React.Component {
   }
 
   handleReset = () => {
+    // Unregister any old broken service worker if user clicks reset
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (let registration of registrations) {
+          registration.unregister()
+        }
+      }).catch(() => {})
+    }
     this.setState({ hasError: false, error: null })
     window.location.reload()
   }
@@ -28,22 +36,32 @@ class ErrorBoundary extends React.Component {
       return (
         <div style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          minHeight: '100vh', padding: '24px', backgroundColor: '#0A0F1C', color: '#E2E8F0', textAlign: 'center'
+          minHeight: '100vh', padding: '24px', backgroundColor: '#0A0F1C', color: '#E2E8F0', textAlign: 'center',
+          fontFamily: 'system-ui, sans-serif'
         }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '12px' }}>
-            ⚠️ Ocurrió un error inesperado
+          <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '12px', color: '#FF4444' }}>
+            ⚠️ Ocurrió un error en la app
           </h2>
-          <p style={{ color: '#94A3B8', fontSize: '14px', maxWidth: '400px', marginBottom: '20px', lineHeight: 1.5 }}>
-            El dashboard detectó un problema de conexión o actualización. Toca el botón para recargar.
+          <p style={{ color: '#94A3B8', fontSize: '13px', maxWidth: '420px', marginBottom: '16px', lineHeight: 1.5 }}>
+            Se detectó una discrepancia de caché o red en tu dispositivo.
           </p>
+          {this.state.error && (
+            <pre style={{
+              backgroundColor: 'rgba(255, 68, 68, 0.1)', color: '#FFB800', padding: '12px', borderRadius: '6px',
+              fontSize: '11px', textAlign: 'left', maxWidth: '90%', overflowX: 'auto', marginBottom: '20px',
+              border: '1px solid rgba(255, 68, 68, 0.2)', whiteSpace: 'pre-wrap', wordBreak: 'break-word'
+            }}>
+              {this.state.error.toString()}
+            </pre>
+          )}
           <button
             onClick={this.handleReset}
             style={{
-              padding: '10px 20px', fontSize: '14px', fontWeight: 600, borderRadius: '8px',
+              padding: '12px 24px', fontSize: '14px', fontWeight: 600, borderRadius: '8px',
               backgroundColor: '#00FF6A', color: '#0A0F1C', border: 'none', cursor: 'pointer'
             }}
           >
-            🔄 Recargar Dashboard
+            🔄 Limpiar Caché y Reintentar
           </button>
         </div>
       )

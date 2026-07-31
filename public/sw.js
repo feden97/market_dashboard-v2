@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dashboard-financiero-v2-cache-v3';
+const CACHE_NAME = 'dashboard-financiero-v2-cache-v4';
 
 const STATIC_ASSETS = [
   './',
@@ -10,16 +10,16 @@ const STATIC_ASSETS = [
   './data/snapshot.json'
 ];
 
-// Install event — cache core app shell assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
+      return Promise.all(
+        STATIC_ASSETS.map((asset) => cache.add(asset).catch(() => null))
+      );
     }).then(() => self.skipWaiting())
   );
 });
 
-// Activate event — clean up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -32,14 +32,15 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event — Network First for API calls, Stale-While-Revalidate for app assets
 self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
-
-  // Ignore non-GET requests
   if (event.request.method !== 'GET') return;
 
-  // Handle external API requests (criptoya, argentinadatos, proxy): Network first, fallback to cache
+  const url = new URL(event.request.url);
+
+  // Only handle standard http / https schemes
+  if (!url.protocol.startsWith('http')) return;
+
+  // External API calls: Network first, fallback to cache
   if (
     url.hostname.includes('criptoya.com') ||
     url.hostname.includes('argentinadatos.com') ||
@@ -47,42 +48,40 @@ self.addEventListener('fetch', (event) => {
   ) {
     event.respondWith(
       fetch(event.request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseClone = networkResponse.clone();
+        .then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
             caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseClone);
-            });
+              cache.put(event.request, clone).catch(() => {});
+            }).catch(() => {});
           }
-          return networkResponse;
+          return response;
         })
         .catch(() => {
-          // Offline fallback
-          return caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
-            if (cachedResponse) return cachedResponse;
-            return caches.match('./data/snapshot.json', { ignoreSearch: true });
+          return caches.match(event.request, { ignoreSearch: true }).then((cached) => {
+            return cached || caches.match('./data/snapshot.json', { ignoreSearch: true });
           });
         })
     );
     return;
   }
 
-  // Handle static app shell assets: Stale-While-Revalidate
+  // App Shell Assets: Stale-While-Revalidate safely
   event.respondWith(
     caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
-      const fetchPromise = fetch(event.request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseClone = networkResponse.clone();
+      const networkFetch = fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200 && (response.type === 'basic' || response.type === 'cors')) {
+            const clone = response.clone();
             caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseClone);
-            });
+              cache.put(event.request, clone).catch(() => {});
+            }).catch(() => {});
           }
-          return networkResponse;
+          return response;
         })
         .catch(() => cachedResponse);
 
-      return cachedResponse || fetchPromise;
+      return cachedResponse || networkFetch;
     })
   );
 });
