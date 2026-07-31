@@ -29,8 +29,8 @@ export function useLiveData() {
   const fetchAll = useCallback(async () => {
     try {
       // 🚀 Scalability: Option to use a centralized Proxy (BFF)
-      // Change this URL to your Render/Railway proxy address once deployed
-      const PROXY_URL = null // e.g., 'https://your-proxy.onrender.com/data'
+      // Set VITE_PROXY_URL in .env to your Render/Railway proxy address
+      const PROXY_URL = import.meta.env.VITE_PROXY_URL || null
 
       if (PROXY_URL) {
         const resp = await fetch(PROXY_URL).then(r => r.json())

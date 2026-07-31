@@ -329,6 +329,24 @@ body {
     color: #f3f4f6;
 }
 
+.pwa-install-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 999px;
+    background: var(--accent-glow);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.pwa-install-btn:hover {
+    background: var(--accent);
+    color: #0A0F1C;
+}
+
 /* ── Layout ────────────────────────────────────────────────── */
 .main-content {
     flex: 1;
@@ -1552,7 +1570,15 @@ body {
     height: 100%;
     width: 100%;
     background: linear-gradient(90deg, var(--accent), #00e65b);
-    transition: width 1s linear;
+}
+
+.progress-bar-animate {
+    animation: progress-countdown 60s linear forwards;
+}
+
+@keyframes progress-countdown {
+    from { width: 100%; }
+    to   { width: 0%; }
 }
 
 .update-time-container {

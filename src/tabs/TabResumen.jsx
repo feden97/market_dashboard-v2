@@ -1,16 +1,34 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { formatARS, calcIpcStats, getLast12IPC } from '../utils/format'
 import { EntityIcon } from '../utils/icons'
 import InflacionChart from '../charts/InflacionChart'
 
+function RadarCard({ icon, label, value, entity, detail, iconStyle }) {
+  return (
+    <div className="radar-card">
+      <div className="radar-card-icon" style={iconStyle}>
+        {icon}
+      </div>
+      <div className="radar-card-body">
+        <span className="radar-card-label">{label}</span>
+        <span className="radar-card-value">
+          {value}
+        </span>
+        <span className="radar-card-entity">
+          {entity}
+        </span>
+        {detail && (
+          <div className="radar-card-detail">
+            {detail}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function TabResumen({ snapshot, liveData, liveInflation }) {
   const [ipcStats, setIpcStats] = useState(null)
-
-  useEffect(() => {
-    const handler = e => setIpcStats(e.detail)
-    window.addEventListener('ipc-stats', handler)
-    return () => window.removeEventListener('ipc-stats', handler)
-  }, [])
 
   useEffect(() => {
     const ipc = snapshot?.argentina_macro?.ipc_history
@@ -24,18 +42,20 @@ export default function TabResumen({ snapshot, liveData, liveInflation }) {
   const fiat = liveData?.fiat
   const usdt = liveData?.usdt
 
-  const allPrices = fiat ? [
+  const allPrices = useMemo(() => fiat ? [
     { name: 'Oficial', price: fiat.oficial?.price },
     { name: 'MEP',     price: fiat.mep?.price },
     { name: 'CCL',     price: fiat.ccl?.price },
     { name: 'Blue',    price: fiat.blue?.price },
     { name: 'USDT',    price: usdt?.maxVenta },
-  ].filter(d => d.price > 0) : []
-  const cheapest = allPrices.length ? allPrices.reduce((a, b) => a.price < b.price ? a : b) : null
+  ].filter(d => d.price > 0) : [], [fiat, usdt])
+  const cheapest = useMemo(() => allPrices.length ? allPrices.reduce((a, b) => a.price < b.price ? a : b) : null, [allPrices])
 
-  const purchasingPower = ipcStats
-    ? new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(10000 * (1 + ipcStats.acum12m / 100))
-    : '--'
+  const purchasingPower = useMemo(() => {
+    return ipcStats
+      ? formatARS(10000 * (1 + ipcStats.acum12m / 100), 0)
+      : '--'
+  }, [ipcStats])
 
   const macro = snapshot?.argentina_macro
   const holidays = macro?.holidays ?? []
@@ -51,93 +71,70 @@ export default function TabResumen({ snapshot, liveData, liveInflation }) {
       {/* 4 metric cards */}
       <div className="radar-grid">
         {/* Dólar más barato */}
-        <div className="radar-card">
-          <div className="radar-card-icon">
+        <RadarCard
+          icon={
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
             </svg>
-          </div>
-          <div className="radar-card-body">
-            <span className="radar-card-label">DÓLAR MÁS BARATO</span>
-            <span id="cheapest-dollar-val" className="radar-card-value">
-              {cheapest ? formatARS(cheapest.price) : '$0,00'}
-            </span>
-            <span id="cheapest-dollar-name" className="radar-card-entity">
-              {cheapest?.name ?? '...'}
-            </span>
-          </div>
-        </div>
+          }
+          label="DÓLAR MÁS BARATO"
+          value={cheapest ? formatARS(cheapest.price) : '$0,00'}
+          entity={cheapest?.name ?? '...'}
+        />
 
         {/* Mejor cuenta remunerada */}
-        <div className="radar-card">
-          <div className="radar-card-icon" style={{ background: 'transparent', padding: 0 }}>
-            {liveData?._bestYield?.name ? (
+        <RadarCard
+          iconStyle={{ background: 'transparent', padding: 0 }}
+          icon={
+            liveData?._bestYield?.name ? (
               <EntityIcon name={liveData._bestYield.name} size={44} />
             ) : (
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="2" y="5" width="20" height="14" rx="2" />
                 <line x1="2" y1="10" x2="22" y2="10" />
               </svg>
-            )}
-          </div>
-          <div className="radar-card-body">
-            <span className="radar-card-label">MEJOR CUENTA (TNA)</span>
-            <span id="best-yield-val" className="radar-card-value">
-              {liveData?._bestYield?.rate ? `${liveData._bestYield.rate}%` : '0,00%'}
-            </span>
-            <span id="best-yield-name" className="radar-card-entity">
-              {liveData?._bestYield?.name ?? '...'}
-            </span>
-          </div>
-        </div>
+            )
+          }
+          label="MEJOR CUENTA (TNA)"
+          value={liveData?._bestYield?.rate ? `${liveData._bestYield.rate}%` : '0,00%'}
+          entity={liveData?._bestYield?.name ?? '...'}
+        />
 
         {/* Mejor plazo fijo */}
-        <div className="radar-card">
-          <div className="radar-card-icon" style={{ background: 'transparent', padding: 0 }}>
-            {liveData?._bestPF?.name ? (
+        <RadarCard
+          iconStyle={{ background: 'transparent', padding: 0 }}
+          icon={
+            liveData?._bestPF?.name ? (
               <EntityIcon name={liveData._bestPF.name} size={44} />
             ) : (
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 21h18M3 10h18M5 10v11M19 10v11M9 10v11M15 10v11M12 3l9 7H3l9-7z" />
               </svg>
-            )}
-          </div>
-          <div className="radar-card-body">
-            <span className="radar-card-label">MEJOR PLAZO FIJO (TNA)</span>
-            <span id="best-pf-val" className="radar-card-value">
-              {liveData?._bestPF?.rate ? `${liveData._bestPF.rate}%` : '0,00%'}
-            </span>
-            <span id="best-pf-name" className="radar-card-entity">
-              {liveData?._bestPF?.name ?? '...'}
-            </span>
-          </div>
-        </div>
+            )
+          }
+          label="MEJOR PLAZO FIJO (TNA)"
+          value={liveData?._bestPF?.rate ? `${liveData._bestPF.rate}%` : '0,00%'}
+          entity={liveData?._bestPF?.name ?? '...'}
+        />
 
         {/* Mejor APY stablecoins */}
-        <div className="radar-card">
-          <div className="radar-card-icon" style={{ background: 'transparent', padding: 0 }}>
-            {liveData?._bestCrypto?.name ? (
+        <RadarCard
+          iconStyle={{ background: 'transparent', padding: 0 }}
+          icon={
+            liveData?._bestCrypto?.name ? (
               <EntityIcon name={liveData._bestCrypto.name} size={44} />
             ) : (
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" />
                 <path d="M12 6v12M15 9.5H10.5a2.5 2.5 0 0 0 0 5H14a2.5 2.5 0 0 1 0 5H9" />
               </svg>
-            )}
-          </div>
-          <div className="radar-card-body">
-            <span className="radar-card-label">MEJOR APY STABLES</span>
-            <span id="best-crypto-val" className="radar-card-value">
-              {liveData?._bestCrypto?.rate ? `${liveData._bestCrypto.rate}%` : '0,00%'}
-            </span>
-            <span id="best-crypto-name" className="radar-card-entity">
-              {liveData?._bestCrypto?.name ?? '...'}
-            </span>
-            <div id="best-crypto-detail" className="radar-card-detail">
-              {liveData?._bestCrypto?.coin ? `(${liveData._bestCrypto.coin})` : ''}
-            </div>
-          </div>
-        </div>
+            )
+          }
+          label="MEJOR APY STABLES"
+          value={liveData?._bestCrypto?.rate ? `${liveData._bestCrypto.rate}%` : '0,00%'}
+          entity={liveData?._bestCrypto?.name ?? '...'}
+          detail={liveData?._bestCrypto?.coin ? `(${liveData._bestCrypto.coin})` : ''}
+        />
       </div>
 
       {/* Bottom row: Inflación + Feriados */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import TopNav    from './components/TopNav'
 import TabResumen    from './tabs/TabResumen'
 import TabDolares    from './tabs/TabDolares'
@@ -26,14 +26,16 @@ export default function App() {
     setTheme(document.documentElement.getAttribute('data-theme') || 'dark')
   }, [])
 
-  const enrichedLiveData = liveData
-    ? {
-        ...liveData,
-        _bestYield:  tasas?.bestYield  ?? null,
-        _bestPF:     tasas?.bestPF     ?? null,
-        _bestCrypto: tasas?.bestCrypto ?? null,
-      }
-    : null
+  const enrichedLiveData = useMemo(() => {
+    return liveData
+      ? {
+          ...liveData,
+          _bestYield:  tasas?.bestYield  ?? null,
+          _bestPF:     tasas?.bestPF     ?? null,
+          _bestCrypto: tasas?.bestCrypto ?? null,
+        }
+      : null
+  }, [liveData, tasas])
 
   function handleThemeToggle() {
     const next = theme === 'dark' ? 'light' : 'dark'
@@ -55,25 +57,31 @@ export default function App() {
         theme={theme}
       />
       <div className="main-content">
-        <div className={`tab-pane ${activeTab === 'resumen' ? 'active' : ''}`} style={{ display: activeTab === 'resumen' ? 'block' : 'none' }}>
-          <TabResumen
-            snapshot={snapshot}
-            liveData={enrichedLiveData}
-            bandas={bandas}
-            liveInflation={liveData?.liveInflation}
-          />
-        </div>
-        <div className={`tab-pane ${activeTab === 'dolares' ? 'active' : ''}`} style={{ display: activeTab === 'dolares' ? 'block' : 'none' }}>
-          <TabDolares
-            snapshot={snapshot}
-            liveData={enrichedLiveData}
-            bandas={bandas}
-            historicalFiat={snapshot?.historical_fiat}
-          />
-        </div>
-        <div className={`tab-pane ${(activeTab === 'tasas' || activeTab === 'tasas-cripto') ? 'active' : ''}`} style={{ display: (activeTab === 'tasas' || activeTab === 'tasas-cripto') ? 'block' : 'none' }}>
-          <TabTasas tasas={tasas} displayMode={activeTab === 'tasas' ? 'pesos' : 'cripto'} />
-        </div>
+        {activeTab === 'resumen' && (
+          <div className="tab-pane active">
+            <TabResumen
+              snapshot={snapshot}
+              liveData={enrichedLiveData}
+              bandas={bandas}
+              liveInflation={liveData?.liveInflation}
+            />
+          </div>
+        )}
+        {activeTab === 'dolares' && (
+          <div className="tab-pane active">
+            <TabDolares
+              snapshot={snapshot}
+              liveData={enrichedLiveData}
+              bandas={bandas}
+              historicalFiat={snapshot?.historical_fiat}
+            />
+          </div>
+        )}
+        {(activeTab === 'tasas' || activeTab === 'tasas-cripto') && (
+          <div className="tab-pane active">
+            <TabTasas tasas={tasas} displayMode={activeTab === 'tasas' ? 'pesos' : 'cripto'} />
+          </div>
+        )}
       </div>
     </div>
   )

@@ -1,6 +1,6 @@
 # Dashboard Financiero — v2.0
 
-Stack: React 18 + Vite + Chart.js (vanilla CSS, sin Tailwind para máxima compatibilidad con GitHub Pages)
+Stack: React 18 + Vite + Tailwind CSS 4 + Chart.js
 
 ## Estructura
 

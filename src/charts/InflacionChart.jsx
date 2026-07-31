@@ -143,9 +143,6 @@ export default function InflacionChart({ ipcHistory, liveInflation }) {
       },
     })
 
-    // Update KPI display via custom event
-    window.dispatchEvent(new CustomEvent('ipc-stats', { detail: { lastMonth, avg12m, acum12m, last12 } }))
-
     return () => chartRef.current?.destroy()
   }, [ipcHistory, liveInflation])
 

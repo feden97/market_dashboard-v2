@@ -1,36 +1,13 @@
 import { useState, useEffect } from 'react'
 import { formatLimit, formatDate } from '../utils/format'
+import {
+  PF_ALLOWED, PF_NAME_MAP,
+  REMU_FILTER, REMU_NAMES,
+  FCI_LIST,
+  YIELD_ENTITIES, YIELD_API_KEY, YIELD_DISPLAY, YIELD_COINS,
+} from '../utils/config'
 
 const API = 'https://api.argentinadatos.com/v1/finanzas'
-
-const PF_ALLOWED  = ['NACION', 'PROVINCIA', 'CIUDAD', 'SANTANDER', 'GALICIA', 'BBVA', 'MACRO', 'BRUBANK', 'DEL SOL', 'UALA', 'SUPERVIELLE']
-const PF_NAME_MAP = {
-  NACION: 'Banco Nación', PROVINCIA: 'Banco Provincia', CIUDAD: 'Banco Ciudad',
-  SANTANDER: 'Banco Santander', 'GALICIA MAS': 'Banco Galicia Más', HSBC: 'Banco Galicia Más',
-  GALICIA: 'Banco Galicia', BBVA: 'BBVA', MACRO: 'Banco Macro',
-  BRUBANK: 'Brubank', 'DEL SOL': 'Banco del Sol', UALA: 'Ualá', SUPERVIELLE: 'Banco Supervielle',
-}
-
-const REMU_FILTER = ['CARREFOUR', 'FIWIND', 'NARANJA', 'UALA']
-const REMU_NAMES  = {
-  'UALA PLUS 2': 'Ualá Plus 2', 'UALA PLUS 1': 'Ualá Plus 1', 'UALA': 'Ualá',
-  'NARANJA X': 'Naranja X', 'FIWIND': 'Fiwind', 'CARREFOUR': 'Carrefour Banco',
-}
-
-const FCI_LIST = [
-  { key: 'PREX',     name: 'Prex',         desc: 'Allaria Ahorro - Clase E' },
-  { key: 'PERSONAL', name: 'Personal Pay',  desc: 'Delta Pesos - Clase X' },
-  { key: 'UALA',     name: 'Ualá',          desc: 'Ualintec Ahorro Pesos - Clase A' },
-  { key: 'CLARO',    name: 'Claro Pay',     desc: 'SBS Ahorro Pesos - Clase A' },
-  { key: 'MERCADO',  name: 'Mercado Pago',  desc: 'Mercado Fondo - Clase A' },
-  { key: 'LEMON',    name: 'Lemon',         desc: 'Fima Premium - Clase P' },
-  { key: 'FIWIND',   name: 'Fiwind',        desc: 'Delta Pesos - Clase A' },
-]
-
-const YIELD_ENTITIES = ['Fiwind', 'LB', 'Belo', 'LemonCash', 'Vesseo']
-const YIELD_API_KEY  = { Fiwind: 'fiwind', LB: 'letsbit', Belo: 'belo', LemonCash: 'lemoncash', Vesseo: 'vesseo' }
-const YIELD_DISPLAY  = { LemonCash: 'Lemon' }
-const YIELD_COINS    = ['USDT', 'USDC', 'DAI']
 
 
 

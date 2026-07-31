@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { formatARS, varInfo, calcBrecha } from '../utils/format'
 import { EntityIcon, QUESTION_MARK_SVG } from '../utils/icons'
 import SpreadChart from '../charts/SpreadChart'
@@ -21,27 +21,17 @@ function renderExchangeIcon(id) {
   return <EntityIcon name={id} size={20} styleOverrides={{ borderRadius: '4px' }} />
 }
 
-function UpdateBar({ lastUpdated }) {
-  const [secs, setSecs] = useState(60)
-
-  useEffect(() => {
-    setSecs(60)
-    const interval = setInterval(() => {
-      setSecs(s => Math.max(0, s - 1))
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [lastUpdated])
+const UpdateBar = React.memo(function UpdateBar({ lastUpdated }) {
+  // Use a key to restart the CSS animation whenever lastUpdated changes
+  const animKey = lastUpdated ? lastUpdated.getTime() : 0
 
   return (
     <div className="update-bar-wrapper">
       <div className="progress-bar-bg">
         <div
-          className="progress-bar-fill"
+          key={animKey}
+          className="progress-bar-fill progress-bar-animate"
           id="update-progress-bar"
-          style={{
-            width: `${(secs / 60) * 100}%`,
-            transition: 'width 1s linear'
-          }}
         />
       </div>
       <div className="update-time-container">
@@ -54,7 +44,7 @@ function UpdateBar({ lastUpdated }) {
       </div>
     </div>
   )
-}
+})
 
 function VarBadge({ value }) {
   if (value == null) return <span style={{ color: 'var(--text-muted)' }}>—</span>
@@ -89,12 +79,12 @@ export default function TabDolares({ snapshot, liveData, bandas, historicalFiat 
 
   const usdtRows = usdt?.exchanges ?? []
 
-  const bestVenta = usdtRows.filter(e => e.id !== 'bybitp2p').reduce((max, e) => e.venta_a > max ? e.venta_a : max, 0)
-  const bestCompra = usdtRows.filter(e => e.id !== 'bybitp2p').reduce((min, e) => e.compra_a < min ? e.compra_a : min, Infinity)
+  const bestVenta = useMemo(() => usdtRows.filter(e => e.id !== 'bybitp2p').reduce((max, e) => e.venta_a > max ? e.venta_a : max, 0), [usdtRows])
+  const bestCompra = useMemo(() => usdtRows.filter(e => e.id !== 'bybitp2p').reduce((min, e) => e.compra_a < min ? e.compra_a : min, Infinity), [usdtRows])
 
-  const basePrice = base === 'usdt'
+  const basePrice = useMemo(() => base === 'usdt'
     ? usdt?.maxVenta
-    : fiat?.[base]?.price
+    : fiat?.[base]?.price, [base, usdt, fiat])
 
   return (
     <div className="panel-ancho">
@@ -113,10 +103,10 @@ export default function TabDolares({ snapshot, liveData, bandas, historicalFiat 
             <table className="data-table" style={{ border: 'none' }}>
               <thead>
                 <tr>
-                  <th style={{ border: 'none' }}>Dólar</th>
-                  <th style={{ border: 'none' }}>Precio</th>
-                  <th style={{ border: 'none' }}>Var.</th>
-                  <th style={{ border: 'none' }}>Brecha s/</th>
+                  <th scope="col" style={{ border: 'none' }}>Dólar</th>
+                  <th scope="col" style={{ border: 'none' }}>Precio</th>
+                  <th scope="col" style={{ border: 'none' }}>Var.</th>
+                  <th scope="col" style={{ border: 'none' }}>Brecha s/</th>
                 </tr>
               </thead>
               <tbody id="fiat-table-body">
@@ -166,9 +156,9 @@ export default function TabDolares({ snapshot, liveData, bandas, historicalFiat 
             <table className="data-table" style={{ border: 'none' }}>
               <thead>
                 <tr>
-                  <th style={{ padding: '8px 10px' }}>Exchange (USDT)</th>
-                  <th style={{ padding: '8px 10px', textAlign: 'center' }}>Compra a</th>
-                  <th style={{ padding: '8px 10px', textAlign: 'center' }}>Venta a</th>
+                  <th scope="col" style={{ padding: '8px 10px' }}>Exchange (USDT)</th>
+                  <th scope="col" style={{ padding: '8px 10px', textAlign: 'center' }}>Compra a</th>
+                  <th scope="col" style={{ padding: '8px 10px', textAlign: 'center' }}>Venta a</th>
                 </tr>
               </thead>
               <tbody id="usdt-table-body">

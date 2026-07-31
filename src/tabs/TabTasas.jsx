@@ -159,9 +159,9 @@ export default function TabTasas({ tasas, displayMode }) {
               <table className="yield-matrix">
                 <thead>
                   <tr>
-                    <th>Criptomoneda</th>
+                    <th scope="col">Criptomoneda</th>
                     {yields.entities.map(ent => (
-                      <th key={ent}>
+                      <th scope="col" key={ent}>
                         <div className="matrix-exchange-header">
                           <EntityIcon name={yields.displayMap[ent] || ent} size={22} />
                           <span>{yields.displayMap[ent] || ent}</span>

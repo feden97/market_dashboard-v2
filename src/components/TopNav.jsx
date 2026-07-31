@@ -1,14 +1,35 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 
 export default function TopNav({ activeTab, onTabChange, onThemeToggle, theme }) {
   const isTasasActive = activeTab === 'tasas' || activeTab === 'tasas-cripto'
+  const [deferredPrompt, setDeferredPrompt] = useState(null)
+
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+    }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  async function handleInstallClick() {
+    if (!deferredPrompt) return
+    deferredPrompt.prompt()
+    const { outcome } = await deferredPrompt.userChoice
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null)
+    }
+  }
 
   return (
     <nav className="top-nav">
       <div className="nav-container">
-        <div className="nav-tabs-group">
+        <div className="nav-tabs-group" role="tablist">
           <button
             id="tab-resumen-btn"
+            role="tab"
+            aria-selected={activeTab === 'resumen'}
             className={`nav-tab ${activeTab === 'resumen' ? 'active' : ''}`}
             onClick={() => onTabChange('resumen')}
           >
@@ -16,6 +37,8 @@ export default function TopNav({ activeTab, onTabChange, onThemeToggle, theme })
           </button>
           <button
             id="tab-argentina-btn"
+            role="tab"
+            aria-selected={activeTab === 'dolares'}
             className={`nav-tab ${activeTab === 'dolares' ? 'active' : ''}`}
             onClick={() => onTabChange('dolares')}
           >
@@ -23,14 +46,28 @@ export default function TopNav({ activeTab, onTabChange, onThemeToggle, theme })
           </button>
           <button
             id="tab-tasas-btn"
+            role="tab"
+            aria-selected={isTasasActive}
             className={`nav-tab ${isTasasActive ? 'active' : ''}`}
             onClick={() => onTabChange('tasas')}
           >
             💰 Tasas
           </button>
         </div>
-        <div className="nav-actions-right">
-          <button id="theme-toggle" className="theme-toggle-btn" onClick={onThemeToggle} title="Cambiar Tema">
+        <div className="nav-actions-right" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {deferredPrompt && (
+            <button
+              id="pwa-install-btn"
+              className="pwa-install-btn"
+              onClick={handleInstallClick}
+              title="Instalar App"
+              aria-label="Instalar aplicación en tu dispositivo"
+            >
+              📲 Instalar App
+            </button>
+          )}
+
+          <button id="theme-toggle" className="theme-toggle-btn" onClick={onThemeToggle} title="Cambiar Tema" aria-label="Cambiar tema">
             <svg id="sun-icon" className="theme-icon" style={{ display: theme === 'dark' ? 'block' : 'none' }} viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="5"></circle>
               <line x1="12" y1="1" x2="12" y2="3"></line>

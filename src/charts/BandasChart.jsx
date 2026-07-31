@@ -27,13 +27,21 @@ export default function BandasChart({ bandas, historicalFiat, fullHolidays, live
   }, [bandas, historicalFiat, may])
 
   useEffect(() => {
-    if (!chartData || view !== 'chart') return
+    if (!chartData || view !== 'chart' || !canvasRef.current) return
+
+    if (chartRef.current) {
+      chartRef.current.data.labels = chartData.labels
+      chartRef.current.data.datasets[0].data = chartData.dataSup
+      chartRef.current.data.datasets[1].data = chartData.dataInf
+      chartRef.current.data.datasets[2].data = chartData.dataMay
+      chartRef.current.update('none')
+      return
+    }
 
     const isLight = document.documentElement.getAttribute('data-theme') === 'light'
     const gridColor = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'
     const textColor = isLight ? '#64748b' : '#aaaaaa'
 
-    chartRef.current?.destroy()
     chartRef.current = new Chart(canvasRef.current, {
       type: 'line',
       data: {
@@ -95,7 +103,10 @@ export default function BandasChart({ bandas, historicalFiat, fullHolidays, live
         interaction: { mode: 'index', intersect: false },
       },
     })
-    return () => chartRef.current?.destroy()
+    return () => {
+      chartRef.current?.destroy()
+      chartRef.current = null
+    }
   }, [chartData, view])
 
   if (!bandaHoy) return <div className="loading-placeholder">Calculando bandas...</div>

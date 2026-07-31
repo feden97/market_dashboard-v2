@@ -1,10 +1,16 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import requests
 import threading
 import time
 import os
 
 app = Flask(__name__)
+
+# ── Configuration ────────────────────────────────────────────────────
+# Set ALLOWED_ORIGIN to your deployed dashboard URL for security.
+# Example: "https://feden97.github.io"
+# Falls back to "*" only in development.
+ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN", "*")
 
 # Global storage for the latest data
 latest_data = {
@@ -32,7 +38,7 @@ def fetch_data_loop():
 
             latest_data = {
                 "status": "ok",
-                "last_updated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.get_gmtime()),
+                "last_updated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "fiat": {
                     "ccl": cripto_ya_dolar.get("ccl", {}),
                     "mep": cripto_ya_dolar.get("mep", {}),
@@ -60,9 +66,10 @@ def health_check():
 @app.route('/data')
 def get_data():
     """Endpoint for the React frontend to fetch data."""
-    # Add CORS header so the browser allows the request
     response = jsonify(latest_data)
-    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add("Access-Control-Allow-Origin", ALLOWED_ORIGIN)
+    response.headers.add("Access-Control-Allow-Methods", "GET, OPTIONS")
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type")
     return response
 
 if __name__ == '__main__':
