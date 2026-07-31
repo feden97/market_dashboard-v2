@@ -197,9 +197,7 @@ body {
     position: sticky;
     top: 0;
     z-index: 1000;
-    background-color: var(--bg-header-alpha);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background-color: var(--bg-body);
     border-bottom: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
@@ -950,8 +948,7 @@ body {
 .yield-matrix thead th {
     position: sticky;
     top: 0;
-    background: var(--bg-card);
-    backdrop-filter: blur(10px);
+    background: var(--bg-card-solid);
     z-index: 20;
     padding: 16px;
     text-align: center;
@@ -1570,15 +1567,17 @@ body {
     height: 100%;
     width: 100%;
     background: linear-gradient(90deg, var(--accent), #00e65b);
+    transform-origin: left center;
 }
 
 .progress-bar-animate {
     animation: progress-countdown 60s linear forwards;
+    will-change: transform;
 }
 
 @keyframes progress-countdown {
-    from { width: 100%; }
-    to   { width: 0%; }
+    from { transform: scaleX(1); }
+    to   { transform: scaleX(0); }
 }
 
 .update-time-container {
@@ -1603,22 +1602,6 @@ body {
     background-color: var(--accent);
     border-radius: 50%;
     box-shadow: 0 0 8px var(--accent);
-    animation: livePulse 2s infinite;
-}
-
-@keyframes livePulse {
-    0% {
-        opacity: 0.4;
-        transform: scale(0.8);
-    }
-    50% {
-        opacity: 1;
-        transform: scale(1.1);
-    }
-    100% {
-        opacity: 0.4;
-        transform: scale(0.8);
-    }
 }
 
 .gauge-arc {
