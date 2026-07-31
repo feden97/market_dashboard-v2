@@ -110,6 +110,7 @@ export default function InflacionChart({ ipcHistory, liveInflation }) {
       plugins: [dataLabelsPlugin, yearGroupPlugin],
       options: {
         responsive: true,
+        resizeDelay: 200,
         maintainAspectRatio: false,
         layout: { padding: { top: 22, bottom: 28 } },
         plugins: {

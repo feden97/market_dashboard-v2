@@ -104,11 +104,13 @@ export function useLiveData() {
       })
       setLoading(false)
 
-      // Schedule next update in 60s
+      // Schedule next update in 60s only if document is visible
       clearTimeout(timerRef.current)
-      timerRef.current = setTimeout(() => {
-        fetchAll()
-      }, 60000)
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        timerRef.current = setTimeout(() => {
+          fetchAll()
+        }, 60000)
+      }
 
     } catch (err) {
       console.error('useLiveData error:', err)
@@ -118,7 +120,20 @@ export function useLiveData() {
 
   useEffect(() => {
     fetchAll()
-    return () => clearTimeout(timerRef.current)
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchAll()
+      } else {
+        clearTimeout(timerRef.current)
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      clearTimeout(timerRef.current)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [fetchAll])
 
   return { data, loading }

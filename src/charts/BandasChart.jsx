@@ -81,6 +81,7 @@ export default function BandasChart({ bandas, historicalFiat, fullHolidays, live
       },
       options: {
         responsive: true,
+        resizeDelay: 200,
         maintainAspectRatio: false,
         plugins: {
           legend: {

@@ -117,6 +117,7 @@ export default function SpreadChart({ historicalFiat, liveData, base, setBase })
       },
       options: {
         responsive: true,
+        resizeDelay: 200,
         maintainAspectRatio: false,
         animation: false, // Animacion nativa desactivada si cambiamos datos muy rápido
         plugins: {
