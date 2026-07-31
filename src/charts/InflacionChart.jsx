@@ -13,9 +13,11 @@ export default function InflacionChart({ ipcHistory, liveInflation }) {
 
     // Merge live inflation data
     const merged = { ...ipcHistory }
-    if (liveInflation?.length) {
+    if (Array.isArray(liveInflation)) {
       liveInflation.forEach(item => {
-        merged[item.fecha.substring(0, 7)] = item.valor / 100
+        if (item?.fecha && typeof item.fecha === 'string' && item?.valor != null) {
+          merged[item.fecha.substring(0, 7)] = item.valor > 1 ? item.valor / 100 : item.valor
+        }
       })
     }
 

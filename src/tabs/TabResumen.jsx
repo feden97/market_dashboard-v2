@@ -34,7 +34,13 @@ export default function TabResumen({ snapshot, liveData, liveInflation }) {
     const ipc = snapshot?.argentina_macro?.ipc_history
     if (!ipc) return
     const merged = { ...ipc }
-    liveInflation?.forEach(item => { merged[item.fecha.substring(0,7)] = item.valor / 100 })
+    if (Array.isArray(liveInflation)) {
+      liveInflation.forEach(item => {
+        if (item?.fecha && typeof item.fecha === 'string' && item?.valor != null) {
+          merged[item.fecha.substring(0, 7)] = item.valor > 1 ? item.valor / 100 : item.valor
+        }
+      })
+    }
     const last12 = getLast12IPC(merged)
     if (last12.length) setIpcStats({ ...calcIpcStats(last12), last12 })
   }, [snapshot, liveInflation])

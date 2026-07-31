@@ -41,7 +41,7 @@ export const iconMapExt = {
     'comafi': '<svg viewBox="0 0 24 24" style="width: 28px; height: 28px; background:#e30613; border-radius: 50%; padding:4px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v10h-2V7z" fill="#fff"/></svg>',
     'supervielle': '<svg viewBox="0 0 24 24" style="width: 28px; height: 28px; background:#e30613; border-radius: 50%; padding:4px;"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71L12 2z" fill="#fff"/></svg>',
     'bica': '<svg viewBox="0 0 24 24" style="width: 28px; height: 28px; background:#009640; border-radius: 50%; padding:4px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm4.59-12.42L10 14.17l-2.59-2.58L6 13l4 4 8-8z" fill="#fff"/></svg>',
-    'bybitp2p': '<img src="/assets/bybit.png" style="width: 28px; height: 28px; border-radius: 4px; object-fit: contain; background: #000;">',
+    'bybitp2p': '<img src="assets/bybit.png" style="width: 28px; height: 28px; border-radius: 4px; object-fit: contain; background: #000;">',
 };
 
 // Map each key to its corresponding React element
