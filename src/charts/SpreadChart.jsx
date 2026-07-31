@@ -46,12 +46,17 @@ export default function SpreadChart({ historicalFiat, liveData, base, setBase })
       id: 'zones',
       beforeDraw(chart) {
         if (base !== 'usdt') return
-        const { ctx, chartArea, scales: { y } } = chart
+        const ctx = chart.ctx
+        const chartArea = chart.chartArea
+        const y = chart.scales?.y
+        if (!ctx || !chartArea || !y || y.max == null || y.min == null || typeof y.getPixelForValue !== 'function') return
+
         const lt = document.documentElement.getAttribute('data-theme') === 'light'
         ctx.save()
         const drawZone = (yMin, yMax, color, text, big = false) => {
           const top = y.getPixelForValue(yMax)
           const bot = y.getPixelForValue(yMin)
+          if (top == null || bot == null || isNaN(top) || isNaN(bot)) return
           const dTop = Math.max(top, chartArea.top)
           const dBot = Math.min(bot, chartArea.bottom)
           if (dTop >= dBot) return
@@ -78,15 +83,17 @@ export default function SpreadChart({ historicalFiat, liveData, base, setBase })
     const zeroLinePlugin = {
       id: 'zeroLine',
       afterDraw(chart) {
-        const yScale = chart.scales.y
-        if (!yScale) return
+        const yScale = chart.scales?.y
+        const chartArea = chart.chartArea
+        if (!yScale || !chartArea || typeof yScale.getPixelForValue !== 'function') return
+
         const yPx = yScale.getPixelForValue(0)
-        if (yPx < yScale.top || yPx > yScale.bottom) return
+        if (yPx == null || isNaN(yPx) || yPx < yScale.top || yPx > yScale.bottom) return
         const lt = document.documentElement.getAttribute('data-theme') === 'light'
         chart.ctx.save()
         chart.ctx.beginPath()
-        chart.ctx.moveTo(chart.chartArea.left, yPx)
-        chart.ctx.lineTo(chart.chartArea.right, yPx)
+        chart.ctx.moveTo(chartArea.left, yPx)
+        chart.ctx.lineTo(chartArea.right, yPx)
         chart.ctx.lineWidth = 1.5
         chart.ctx.strokeStyle = lt ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.28)'
         chart.ctx.setLineDash([4, 4])
@@ -128,8 +135,8 @@ export default function SpreadChart({ historicalFiat, liveData, base, setBase })
             borderColor: '#334155', borderWidth: 1,
             displayColors: false,
             callbacks: {
-              title: items => items[0].label,
-              label: ctx => `Spread CCL vs ${BASE_LABELS[base]}: ${ctx.parsed.y.toFixed(2)}%`,
+              title: items => items[0]?.label || '',
+              label: ctx => ctx.parsed?.y != null ? `Spread CCL vs ${BASE_LABELS[base]}: ${ctx.parsed.y.toFixed(2)}%` : '',
             },
           },
         },
@@ -145,7 +152,7 @@ export default function SpreadChart({ historicalFiat, liveData, base, setBase })
             ticks: {
               color: textColor,
               font: { size: 11 },
-              callback: v => v.toFixed(1) + '%',
+              callback: v => v != null ? v.toFixed(1) + '%' : '',
             },
             grid: { color: gridColor },
           },
@@ -163,7 +170,7 @@ export default function SpreadChart({ historicalFiat, liveData, base, setBase })
     if (!chartRef.current || !liveData?.fiat || !liveData?.usdt) return
 
     const cclLive = liveData.fiat.ccl?.price
-    const basePrice = base === 'usdt' ? liveData.usdt.maxVenta : liveData.fiat[base]?.price
+    const basePrice = base === 'usdt' ? liveData.usdt?.maxVenta : liveData.fiat?.[base]?.price
 
     if (cclLive && basePrice > 0) {
       const liveSpread = parseFloat((((cclLive / basePrice) - 1) * 100).toFixed(2))
@@ -171,20 +178,18 @@ export default function SpreadChart({ historicalFiat, liveData, base, setBase })
       const nowStr = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`
 
       const chart = chartRef.current
-      const labels = chart.data.labels
-      const data = chart.data.datasets[0].data
+      const labels = chart.data?.labels
+      const data = chart.data?.datasets?.[0]?.data
 
-      if (labels.at(-1) === nowStr) {
-        // Actualizar último punto de hoy
-        data[data.length - 1] = liveSpread
-      } else {
-        // Agregar punto de hoy si cruzó la medianoche
-        labels.push(nowStr)
-        data.push(liveSpread)
+      if (labels && data) {
+        if (labels.at(-1) === nowStr) {
+          data[data.length - 1] = liveSpread
+        } else {
+          labels.push(nowStr)
+          data.push(liveSpread)
+        }
+        chart.update('none')
       }
-
-      // 'none' previene animaciones costosas completas en canvas que causan parpadeo
-      chart.update('none')
     }
   }, [liveData, base])
 
