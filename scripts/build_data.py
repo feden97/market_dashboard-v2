@@ -135,7 +135,7 @@ def get_argentina_macro_data() -> dict:
 
 # ─── Historical fiat ──────────────────────────────────────────────────────────
 
-def get_historical_fiat_data() -> list[dict] | None:
+def get_historical_fiat_data(out_dir: str = "data") -> list[dict] | None:
     """
     Build a daily time series of ARS exchange rates (CCL, MEP, Blue,
     Oficial, Mayorista, USDT) from the start of the current year.
@@ -175,7 +175,7 @@ def get_historical_fiat_data() -> list[dict] | None:
                 master[col] = np.nan
 
         # USDT history (persisted across builds)
-        history_file  = "data/usdt_history.json"
+        history_file  = os.path.join(out_dir, "usdt_history.json")
         usdt_history: dict[str, float] = {}
         if os.path.exists(history_file):
             with open(history_file) as f:
@@ -248,7 +248,7 @@ def main() -> None:
 
     print("Fetching Argentina macro data and fiat history...")
     macro_data = get_argentina_macro_data()
-    fiat_data  = get_historical_fiat_data()
+    fiat_data  = get_historical_fiat_data(out_dir)
 
     snapshot = {
         "built_at":        datetime.utcnow().isoformat() + "Z",
