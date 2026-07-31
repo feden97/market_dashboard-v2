@@ -1,25 +1,34 @@
-import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import TopNav    from './components/TopNav'
 import TabResumen from './tabs/TabResumen'
+import TabDolares from './tabs/TabDolares'
+import TabTasas   from './tabs/TabTasas'
 import { useSnapshot  } from './hooks/useSnapshot'
 import { useLiveData  } from './hooks/useLiveData'
 import { useTasasData } from './hooks/useTasasData'
 import { generateDatosBandas } from './utils/bandas'
 
-// Code splitting: Lazy load secondary tabs to reduce initial bundle parse & RAM
-const TabDolares = lazy(() => import('./tabs/TabDolares'))
-const TabTasas   = lazy(() => import('./tabs/TabTasas'))
-
-const TabFallback = () => (
-  <div className="tab-pane active" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
-    Cargando sección...
-  </div>
-)
-
 export default function App() {
-  const [activeTab, setActiveTab] = useState('resumen')
-  const [theme, setTheme] = useState(document.documentElement.getAttribute('data-theme') || 'dark')
-  
+  // Support tab selection via query parameter (e.g. ?tab=dolares from PWA shortcuts)
+  const getInitialTab = () => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const tab = params.get('tab')
+      if (tab && ['resumen', 'dolares', 'tasas', 'tasas-cripto'].includes(tab)) {
+        return tab
+      }
+    }
+    return 'resumen'
+  }
+
+  const [activeTab, setActiveTab] = useState(getInitialTab)
+  const [theme, setTheme] = useState(() => {
+    if (typeof document !== 'undefined') {
+      return document.documentElement.getAttribute('data-theme') || 'dark'
+    }
+    return 'dark'
+  })
+
   const { snapshot, loading: snapLoading } = useSnapshot()
   const { data: liveData } = useLiveData()
   const tasas = useTasasData()
@@ -53,7 +62,7 @@ export default function App() {
   }
 
   if (snapLoading && !snapshot) {
-     return <div className="loading-screen">Cargando Snapshot...</div>
+     return <div className="loading-screen">Cargando Dashboard...</div>
   }
 
   return (
@@ -65,33 +74,31 @@ export default function App() {
         theme={theme}
       />
       <div className="main-content">
-        <Suspense fallback={<TabFallback />}>
-          {activeTab === 'resumen' && (
-            <div className="tab-pane active">
-              <TabResumen
-                snapshot={snapshot}
-                liveData={enrichedLiveData}
-                bandas={bandas}
-                liveInflation={liveData?.liveInflation}
-              />
-            </div>
-          )}
-          {activeTab === 'dolares' && (
-            <div className="tab-pane active">
-              <TabDolares
-                snapshot={snapshot}
-                liveData={enrichedLiveData}
-                bandas={bandas}
-                historicalFiat={snapshot?.historical_fiat}
-              />
-            </div>
-          )}
-          {(activeTab === 'tasas' || activeTab === 'tasas-cripto') && (
-            <div className="tab-pane active">
-              <TabTasas tasas={tasas} displayMode={activeTab === 'tasas' ? 'pesos' : 'cripto'} />
-            </div>
-          )}
-        </Suspense>
+        {activeTab === 'resumen' && (
+          <div className="tab-pane active">
+            <TabResumen
+              snapshot={snapshot}
+              liveData={enrichedLiveData}
+              bandas={bandas}
+              liveInflation={liveData?.liveInflation}
+            />
+          </div>
+        )}
+        {activeTab === 'dolares' && (
+          <div className="tab-pane active">
+            <TabDolares
+              snapshot={snapshot}
+              liveData={enrichedLiveData}
+              bandas={bandas}
+              historicalFiat={snapshot?.historical_fiat}
+            />
+          </div>
+        )}
+        {(activeTab === 'tasas' || activeTab === 'tasas-cripto') && (
+          <div className="tab-pane active">
+            <TabTasas tasas={tasas} displayMode={activeTab === 'tasas' ? 'pesos' : 'cripto'} />
+          </div>
+        )}
       </div>
     </div>
   )

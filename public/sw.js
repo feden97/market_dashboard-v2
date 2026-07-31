@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dashboard-financiero-v2-cache-v2';
+const CACHE_NAME = 'dashboard-financiero-v2-cache-v3';
 
 const STATIC_ASSETS = [
   './',
@@ -58,10 +58,9 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => {
           // Offline fallback
-          return caches.match(event.request).then((cachedResponse) => {
+          return caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
             if (cachedResponse) return cachedResponse;
-            // Fallback to static snapshot if API request failed offline
-            return caches.match('./data/snapshot.json');
+            return caches.match('./data/snapshot.json', { ignoreSearch: true });
           });
         })
     );
@@ -70,7 +69,7 @@ self.addEventListener('fetch', (event) => {
 
   // Handle static app shell assets: Stale-While-Revalidate
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
+    caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
       const fetchPromise = fetch(event.request)
         .then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
