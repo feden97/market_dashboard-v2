@@ -11,7 +11,7 @@ export default function InflacionChart({ ipcHistory, liveInflation }) {
   useEffect(() => {
     if (!ipcHistory) return
 
-    // Merge live inflation data
+    // Merge live inflation data safely
     const merged = { ...ipcHistory }
     if (Array.isArray(liveInflation)) {
       liveInflation.forEach(item => {
@@ -44,7 +44,9 @@ export default function InflacionChart({ ipcHistory, liveInflation }) {
       id: 'yearGroup',
       afterDraw(chart) {
         const ctx   = chart.ctx
-        const xAxis = chart.scales.x
+        const xAxis = chart.scales?.x
+        if (!ctx || !xAxis || typeof xAxis.getPixelForTick !== 'function' || !years?.length) return
+
         const groups = []
         let cur = years[0], start = 0
         for (let i = 1; i <= years.length; i++) {
@@ -53,8 +55,13 @@ export default function InflacionChart({ ipcHistory, liveInflation }) {
             if (i < years.length) { cur = years[i]; start = i }
           }
         }
-        const tickW = xAxis.getPixelForTick(1) - xAxis.getPixelForTick(0)
-        const yPos  = xAxis.bottom + 10
+        
+        const p0 = xAxis.getPixelForTick(0)
+        const p1 = xAxis.getPixelForTick(1)
+        if (p0 == null || p1 == null || isNaN(p0) || isNaN(p1)) return
+
+        const tickW = p1 - p0
+        const yPos  = (xAxis.bottom || 0) + 10
         ctx.save()
         ctx.strokeStyle = isLight ? '#94a3b8' : '#6b7280'
         ctx.lineWidth   = 1
@@ -62,17 +69,26 @@ export default function InflacionChart({ ipcHistory, liveInflation }) {
         ctx.textAlign   = 'center'
         ctx.textBaseline = 'middle'
         for (const g of groups) {
-          const sx = xAxis.getPixelForTick(g.startIdx) - tickW / 2
-          const ex = xAxis.getPixelForTick(g.endIdx)   + tickW / 2
+          const sTick = xAxis.getPixelForTick(g.startIdx)
+          const eTick = xAxis.getPixelForTick(g.endIdx)
+          if (sTick == null || eTick == null || isNaN(sTick) || isNaN(eTick)) continue
+
+          const sx = sTick - tickW / 2
+          const ex = eTick + tickW / 2
           const cx = (sx + ex) / 2
           const tw = ctx.measureText(g.year).width + 10
+
           ctx.beginPath(); ctx.moveTo(sx + 4, yPos); ctx.lineTo(cx - tw / 2, yPos); ctx.stroke()
           ctx.beginPath(); ctx.moveTo(cx + tw / 2, yPos); ctx.lineTo(ex - 4, yPos); ctx.stroke()
           ctx.beginPath(); ctx.moveTo(sx + 4, yPos - 3); ctx.lineTo(sx + 4, yPos); ctx.stroke()
           ctx.beginPath(); ctx.moveTo(ex - 4, yPos - 3); ctx.lineTo(ex - 4, yPos); ctx.stroke()
           ctx.fillStyle = isLight ? '#94a3b8' : '#6b7280'
           ctx.beginPath()
-          ctx.roundRect(cx - tw / 2 + 1, yPos - 8, tw - 2, 16, 8)
+          if (typeof ctx.roundRect === 'function') {
+            ctx.roundRect(cx - tw / 2 + 1, yPos - 8, tw - 2, 16, 8)
+          } else {
+            ctx.rect(cx - tw / 2 + 1, yPos - 8, tw - 2, 16)
+          }
           ctx.fill()
           ctx.fillStyle = '#fff'
           ctx.fillText(g.year, cx, yPos + 1)
@@ -85,14 +101,19 @@ export default function InflacionChart({ ipcHistory, liveInflation }) {
       id: 'dataLabels',
       afterDatasetsDraw(chart) {
         const ctx       = chart.ctx
+        if (!ctx) return
         const isMobile  = window.innerWidth < 500
         chart.data.datasets.forEach((ds, i) => {
-          chart.getDatasetMeta(i).data.forEach((el, idx) => {
+          const meta = chart.getDatasetMeta(i)
+          if (!meta || !meta.data) return
+          meta.data.forEach((el, idx) => {
+            const val = ds.data?.[idx]
+            if (val == null || isNaN(val) || !el) return
             ctx.fillStyle    = textColor
             ctx.font         = `600 ${isMobile ? '9px' : '10px'} Inter, sans-serif`
             ctx.textAlign    = 'center'
             ctx.textBaseline = 'bottom'
-            ctx.fillText(ds.data[idx].toFixed(1).replace('.', ',') + '%', el.x, el.y - 3)
+            ctx.fillText(val.toFixed(1).replace('.', ',') + '%', el.x, el.y - 3)
           })
         })
       },
@@ -122,7 +143,7 @@ export default function InflacionChart({ ipcHistory, liveInflation }) {
             titleColor: '#94a3b8', bodyColor: '#fff',
             borderColor: '#334155', borderWidth: 1,
             displayColors: false,
-            callbacks: { label: ctx => ctx.parsed.y.toFixed(1).replace('.', ',') + '%' },
+            callbacks: { label: ctx => ctx.parsed.y != null ? ctx.parsed.y.toFixed(1).replace('.', ',') + '%' : '' },
           },
         },
         scales: {
