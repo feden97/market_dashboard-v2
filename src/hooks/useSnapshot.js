@@ -8,7 +8,7 @@ export function useSnapshot() {
   const [state, setState] = useState({ snapshot: null, loading: true, error: null })
 
   useEffect(() => {
-    fetch('data/snapshot.json')
+    fetch(`data/snapshot.json?t=${Date.now()}`, { cache: 'no-store' })
       .then(r => r.ok ? r.json() : null)
       .then(snapshot => {
         setState({ snapshot, loading: false, error: null })
