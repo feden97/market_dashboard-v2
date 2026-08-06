@@ -28,6 +28,11 @@ except ImportError:
 CRYPTO_API_BASE    = "https://criptoya.com/api"
 ARG_DATOS_BASE     = "https://api.argentinadatos.com/v1"
 
+SESSION = requests.Session()
+SESSION.headers.update({
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+})
+
 KEY_EVENTS = [
     "Fed", "Federal Reserve", "Interest Rate", "FOMC",
     "ISM Manufacturing", "ISM Non-Manufacturing", "ISM Services", "ISM",
@@ -84,7 +89,7 @@ def get_argentina_macro_data() -> dict:
     # Holidays
     try:
         year = datetime.now().year
-        resp = requests.get(f"{ARG_DATOS_BASE}/feriados/{year}", timeout=10)
+        resp = SESSION.get(f"{ARG_DATOS_BASE}/feriados/{year}", timeout=10)
         resp.raise_for_status()
         data       = resp.json()
         today_str  = datetime.now().strftime("%Y-%m-%d")
@@ -104,7 +109,7 @@ def get_argentina_macro_data() -> dict:
 
     # Inflation (IPC)
     try:
-        resp = requests.get(f"{ARG_DATOS_BASE}/finanzas/indices/inflacion", timeout=10)
+        resp = SESSION.get(f"{ARG_DATOS_BASE}/finanzas/indices/inflacion", timeout=10)
         resp.raise_for_status()
         items = resp.json()
         macro["ipc_history"] = {
@@ -117,7 +122,7 @@ def get_argentina_macro_data() -> dict:
 
     # Riesgo país
     try:
-        resp = requests.get(f"{ARG_DATOS_BASE}/finanzas/indices/riesgo-pais", timeout=10)
+        resp = SESSION.get(f"{ARG_DATOS_BASE}/finanzas/indices/riesgo-pais", timeout=10)
         resp.raise_for_status()
         data = resp.json()
         if len(data) >= 2:
@@ -153,7 +158,7 @@ def get_historical_fiat_data(out_dir: str = "data") -> list[dict] | None:
         dfs: list[pd.DataFrame] = []
         for key, path in ENDPOINTS.items():
             try:
-                resp = requests.get(f"{ARG_DATOS_BASE}/cotizaciones/dolares/{path}", timeout=10)
+                resp = SESSION.get(f"{ARG_DATOS_BASE}/cotizaciones/dolares/{path}", timeout=10)
                 resp.raise_for_status()
                 df = pd.DataFrame(resp.json())
                 df["fecha"] = pd.to_datetime(df["fecha"])
@@ -183,8 +188,8 @@ def get_historical_fiat_data(out_dir: str = "data") -> list[dict] | None:
 
         today_str = datetime.now().strftime("%Y-%m-%d")
         try:
-            r_crypto = requests.get(f"{CRYPTO_API_BASE}/usdt/ars/0.1", timeout=10)
-            r_p2p    = requests.get(f"{CRYPTO_API_BASE}/binancep2p/usdt/ars/0.1", timeout=10)
+            r_crypto = SESSION.get(f"{CRYPTO_API_BASE}/usdt/ars/0.1", timeout=10)
+            r_p2p    = SESSION.get(f"{CRYPTO_API_BASE}/binancep2p/usdt/ars/0.1", timeout=10)
             max_venta = 0.0
             for ex in ['buenbit', 'fiwind', 'lemoncash', 'tiendacrypto']:
                 bid = r_crypto.json().get(ex, {}).get('totalBid', 0)

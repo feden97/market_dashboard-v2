@@ -23,6 +23,11 @@ latest_data = {
 CRYPTO_BASE = "https://criptoya.com/api"
 ARG_BASE    = "https://api.argentinadatos.com/v1"
 
+session = requests.Session()
+session.headers.update({
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+})
+
 def fetch_data_loop():
     """Background thread that updates data every 10 seconds."""
     global latest_data
@@ -31,10 +36,10 @@ def fetch_data_loop():
             print(f"[{time.strftime('%H:%M:%S')}] Fetching fresh data...")
             
             # Use same endpoints as React useLiveData
-            cripto_ya_dolar = requests.get(f"{CRYPTO_BASE}/dolar", timeout=10).json()
-            crypto_data     = requests.get(f"{CRYPTO_BASE}/usdt/ars/0.1", timeout=10).json()
-            p2p_data        = requests.get(f"{CRYPTO_BASE}/binancep2p/usdt/ars/0.1", timeout=10).json()
-            live_inflation  = requests.get(f"{ARG_BASE}/finanzas/indices/inflacion", timeout=10).json()
+            cripto_ya_dolar = session.get(f"{CRYPTO_BASE}/dolar", timeout=10).json()
+            crypto_data     = session.get(f"{CRYPTO_BASE}/usdt/ars/0.1", timeout=10).json()
+            p2p_data        = session.get(f"{CRYPTO_BASE}/binancep2p/usdt/ars/0.1", timeout=10).json()
+            live_inflation  = session.get(f"{ARG_BASE}/finanzas/indices/inflacion", timeout=10).json()
 
             latest_data = {
                 "status": "ok",
