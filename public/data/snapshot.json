@@ -1,5 +1,5 @@
 {
-  "built_at": "2026-08-11T21:23:16.083167Z",
+  "built_at": "2026-08-12T21:21:30.418310Z",
   "argentina_macro": {
     "ipc_history": {
       "1943-03": 0.016,
@@ -1004,9 +1004,9 @@
       "2026-06": 0.019
     },
     "riesgo_pais": {
-      "valor": 451,
-      "fecha": "07-08-2026",
-      "variacion": 1.12
+      "valor": 465,
+      "fecha": "10-08-2026",
+      "variacion": 3.1
     },
     "holidays": [
       "17-08-2026 - Paso a la Inmortalidad del Gral. José de San Martín"
@@ -3034,12 +3034,21 @@
     },
     {
       "date": "11-08-2026",
-      "ccl": 1583.2,
-      "mep": 1526.1,
-      "blue": 1535.0,
-      "oficial": 1520.0,
+      "ccl": 1584.9,
+      "mep": 1526.3,
+      "blue": 1550.0,
+      "oficial": 1515.0,
       "usdt": 1574.8,
-      "mayorista": 1496.0
+      "mayorista": 1490.5
+    },
+    {
+      "date": "12-08-2026",
+      "ccl": 1584.9,
+      "mep": 1526.3,
+      "blue": 1550.0,
+      "oficial": 1515.0,
+      "usdt": 1578.0,
+      "mayorista": 1490.5
     }
   ]
 }
