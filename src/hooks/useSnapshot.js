@@ -1,23 +1,16 @@
-import { useState, useEffect } from 'react'
+import { usePollingResource } from './usePollingResource.js'
+import { fetchJson, isRecord } from '../utils/http.js'
 
-/**
- * Loads snapshot.json from public/data/
- * Returns { snapshot, loading, error }
- */
+async function load({ signal }) {
+  const data = await fetchJson(`${import.meta.env.BASE_URL}data/snapshot.json`, {
+    signal,
+    validate: value => isRecord(value) && isRecord(value.argentina_macro),
+  })
+  return { data }
+}
+
+/** Load the bundled snapshot; expose failures and a retry without fabricating an empty success. */
 export function useSnapshot() {
-  const [state, setState] = useState({ snapshot: null, loading: true, error: null })
-
-  useEffect(() => {
-    fetch('./data/snapshot.json')
-      .then(r => (r.ok ? r.json() : null))
-      .then(snapshot => {
-        setState({ snapshot: snapshot || {}, loading: false, error: null })
-      })
-      .catch(err => {
-        console.warn('Snapshot fetch warning:', err)
-        setState({ snapshot: {}, loading: false, error: err.message })
-      })
-  }, [])
-
-  return state
+  const { data: snapshot, ...state } = usePollingResource(load)
+  return { snapshot, ...state }
 }

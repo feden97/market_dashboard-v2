@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
 import { formatARS, varInfo, calcBrecha } from '../utils/format'
-import { EntityIcon, QUESTION_MARK_SVG } from '../utils/icons'
+import { EntityIcon } from '../utils/icons'
+import InfoTooltip from '../components/InfoTooltip'
 import SpreadChart from '../charts/SpreadChart'
 import BandasChart from '../charts/BandasChart'
 
@@ -52,8 +53,8 @@ function VarBadge({ value }) {
   return <span className={`badge ${cls}`}>{text}</span>
 }
 
-function BrechaBadge({ val, basePrice }) {
-  if (!val || !basePrice) return <span style={{ color: 'var(--text-muted)' }}>-</span>
+function BrechaBadge({ val, basePrice, comparable = true }) {
+  if (!val || !basePrice || !comparable) return <span style={{ color: 'var(--text-muted)' }}>—</span>
   const pct = calcBrecha(val, basePrice)
   if (pct == null) return <span style={{ color: 'var(--text-muted)' }}>-</span>
   const { cls, text } = varInfo(pct)
@@ -68,23 +69,24 @@ const DOLAR_ROWS = [
   { key: 'blue',    name: 'blue' },
 ]
 
-export default function TabDolares({ snapshot, liveData, bandas, historicalFiat }) {
+export default function TabDolares({ snapshot, liveData, bandas, historicalFiat, theme }) {
   const [base, setBase] = useState('usdt')
 
   const fiat = liveData?.fiat
   const usdt = liveData?.usdt
 
   const fullHolidays = snapshot?.argentina_macro?.full_holidays ?? []
-  const liveMay = fiat?.mayorista?.price ?? 0
+  const liveMay = fiat?.mayorista?.historical ? 0 : fiat?.mayorista?.price ?? 0
 
   const usdtRows = usdt?.exchanges ?? []
 
-  const bestVenta = useMemo(() => usdtRows.filter(e => e.id !== 'bybitp2p').reduce((max, e) => e.venta_a > max ? e.venta_a : max, 0), [usdtRows])
-  const bestCompra = useMemo(() => usdtRows.filter(e => e.id !== 'bybitp2p').reduce((min, e) => e.compra_a < min ? e.compra_a : min, Infinity), [usdtRows])
+  const bestVenta = usdt?.maxVenta
+  const bestCompra = usdt?.minCompra
 
   const basePrice = useMemo(() => base === 'usdt'
     ? usdt?.maxVenta
     : fiat?.[base]?.price, [base, usdt, fiat])
+  const baseHistorical = Boolean(base === 'usdt' ? usdt?.historical : fiat?.[base]?.historical)
 
   return (
     <div className="panel-ancho">
@@ -116,11 +118,11 @@ export default function TabDolares({ snapshot, liveData, bandas, historicalFiat 
                   return (
                     <tr key={name}>
                       <td style={{ color: 'var(--text-muted)', textTransform: 'uppercase' }}>{name}</td>
-                      <td style={{ fontWeight: 'bold' }}>{d?.price ? formatARS(d.price) : '...'}</td>
+                      <td style={{ fontWeight: 'bold' }}>{d?.price ? formatARS(d.price) : '—'}{d?.historical && d.price && <span className="historical-label">Histórico</span>}</td>
                       <td><VarBadge value={d?.var} /></td>
                       <td>
                         {showBrecha
-                          ? <BrechaBadge val={d?.price} basePrice={basePrice} />
+                          ? <BrechaBadge val={d?.price} basePrice={basePrice} comparable={Boolean(d?.historical) === baseHistorical} />
                           : <span style={{ color: 'var(--text-muted)' }}>-</span>
                         }
                       </td>
@@ -131,18 +133,15 @@ export default function TabDolares({ snapshot, liveData, bandas, historicalFiat 
                 <tr>
                   <td style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     USDT
-                    <div className="tooltip-container tooltip-right" style={{ cursor: 'help' }}>
-                      {QUESTION_MARK_SVG}
-                      <div className="tooltip-text" style={{ fontWeight: 600, textAlign: 'left', minWidth: '200px' }}>
-                        Es el dólar cripto que cotiza las 24 horas TODOS los días. Es el precio para comprar USDT en Binance p2p más aproximado posible sin la opción "comerciantes verificados"
-                      </div>
-                    </div>
+                    <InfoTooltip>
+                      Cotización USDT/ARS disponible las 24 horas. Se muestra el mayor precio de venta entre los exchanges comparados; Bybit P2P se muestra solo como referencia.
+                    </InfoTooltip>
                   </td>
-                  <td style={{ fontWeight: 'bold' }}>{usdt?.maxVenta ? formatARS(usdt.maxVenta) : '...'}</td>
+                  <td style={{ fontWeight: 'bold' }}>{usdt?.maxVenta ? formatARS(usdt.maxVenta) : '—'}{usdt?.historical && usdt.maxVenta && <span className="historical-label">Histórico</span>}</td>
                   <td><VarBadge value={usdt?.var} /></td>
                   <td>
                     {base !== 'usdt'
-                      ? <BrechaBadge val={usdt?.maxVenta} basePrice={basePrice} />
+                      ? <BrechaBadge val={usdt?.maxVenta} basePrice={basePrice} comparable={Boolean(usdt?.historical) === baseHistorical} />
                       : <span style={{ color: 'var(--text-muted)' }}>-</span>
                     }
                   </td>
@@ -164,8 +163,8 @@ export default function TabDolares({ snapshot, liveData, bandas, historicalFiat 
               <tbody id="usdt-table-body">
                 {usdtRows.length > 0 ? (
                   usdtRows.slice(0, 10).map(e => {
-                    const isMin = e.compra_a === bestCompra && e.id !== 'bybitp2p'
-                    const isMax = e.venta_a === bestVenta && e.id !== 'bybitp2p'
+                    const isMin = e.compra_a > 0 && e.compra_a === bestCompra && e.id !== 'bybitp2p'
+                    const isMax = e.venta_a > 0 && e.venta_a === bestVenta && e.id !== 'bybitp2p'
                     return (
                       <tr key={e.id}>
                         <td>
@@ -195,7 +194,7 @@ export default function TabDolares({ snapshot, liveData, bandas, historicalFiat 
                 ) : (
                   <tr>
                     <td colSpan={3} style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>
-                      Cargando datos...
+                      No hay cotizaciones de exchanges disponibles.
                     </td>
                   </tr>
                 )}
@@ -211,6 +210,7 @@ export default function TabDolares({ snapshot, liveData, bandas, historicalFiat 
             liveData={liveData}
             base={base}
             setBase={setBase}
+            theme={theme}
           />
         </div>
       </div>
@@ -220,6 +220,7 @@ export default function TabDolares({ snapshot, liveData, bandas, historicalFiat 
         <h2 style={{ color: 'var(--text-main)', margin: '0 0 24px', fontSize: '18px', fontWeight: 600, letterSpacing: '-0.5px' }}>
           Bandas Cambiarias y Dólar Mayorista
         </h2>
+        <p className="model-note">Bandas estimadas con el modelo de IPC rezagado del dashboard. Cuando falta el IPC de referencia, se usa una variación mensual del 2%.</p>
 
         <BandasChart
           bandas={bandas}
@@ -227,6 +228,7 @@ export default function TabDolares({ snapshot, liveData, bandas, historicalFiat 
           fullHolidays={fullHolidays}
           liveMayorista={liveMay}
           snapshot={snapshot}
+          theme={theme}
         />
       </div>
     </div>

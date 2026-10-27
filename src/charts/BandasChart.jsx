@@ -1,55 +1,37 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { Chart, registerables } from 'chart.js'
-import { buildBandasChartData, getBandaForToday } from '../utils/bandas'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { Chart } from './chartRuntime'
+import { formatARS, toFiniteNumber } from '../utils/format'
+import { buildBandasChartData, getBandaForToday, getGaugePosition, getZoneInfo } from '../utils/bandas'
 
-Chart.register(...registerables)
+const fmt = formatARS
 
-const fmt = n => {
-  if (n == null || isNaN(n)) return '$0,00'
-  return `$${n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-}
-
-export default function BandasChart({ bandas, historicalFiat, fullHolidays, liveMayorista, snapshot }) {
+export default function BandasChart({ bandas, historicalFiat, fullHolidays, liveMayorista, theme }) {
   const canvasRef = useRef(null)
   const chartRef = useRef(null)
   const [view, setView] = useState('chart') // 'chart' | 'table'
-  const [chartData, setChartData] = useState(null)
-  const [bandaHoy, setBandaHoy] = useState(null)
-
-  const lastHistMay = historicalFiat?.filter(d => d.mayorista)?.at(-1)?.mayorista
-  const may = liveMayorista || lastHistMay || 0
-
-  useEffect(() => {
-    if (!bandas?.length) return
-    const cd = buildBandasChartData(bandas, historicalFiat, fullHolidays, may)
-    setChartData(cd)
-    setBandaHoy(getBandaForToday(bandas))
-  }, [bandas, historicalFiat, may])
+  const chartData = useMemo(
+    () => buildBandasChartData(bandas, historicalFiat, fullHolidays, liveMayorista),
+    [bandas, historicalFiat, fullHolidays, liveMayorista],
+  )
+  const bandaHoy = useMemo(() => getBandaForToday(bandas), [bandas])
+  const live = toFiniteNumber(liveMayorista)
+  const lastHistMay = chartData.dataMay.filter(price => price != null && price > 0).at(-1)
+  const may = live != null && live > 0 ? live : lastHistMay ?? null
 
   useEffect(() => {
-    if (!chartData || view !== 'chart' || !canvasRef.current) return
-
-    if (chartRef.current) {
-      chartRef.current.data.labels = chartData.labels
-      chartRef.current.data.datasets[0].data = chartData.dataSup
-      chartRef.current.data.datasets[1].data = chartData.dataInf
-      chartRef.current.data.datasets[2].data = chartData.dataMay
-      chartRef.current.update('none')
-      return
-    }
-
-    const isLight = document.documentElement.getAttribute('data-theme') === 'light'
+    if (!bandaHoy || view !== 'chart' || !canvasRef.current) return
+    const isLight = (theme || document.documentElement.getAttribute('data-theme')) === 'light'
     const gridColor = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'
     const textColor = isLight ? '#64748b' : '#aaaaaa'
 
     chartRef.current = new Chart(canvasRef.current, {
       type: 'line',
       data: {
-        labels: chartData.labels,
+        labels: [],
         datasets: [
           {
             label: 'Banda Superior',
-            data: chartData.dataSup,
+            data: [],
             borderColor: '#f97316',
             borderWidth: 2,
             pointRadius: 0,
@@ -58,7 +40,7 @@ export default function BandasChart({ bandas, historicalFiat, fullHolidays, live
           },
           {
             label: 'Banda Inferior',
-            data: chartData.dataInf,
+            data: [],
             borderColor: '#ef4444',
             borderWidth: 2,
             pointRadius: 0,
@@ -68,7 +50,7 @@ export default function BandasChart({ bandas, historicalFiat, fullHolidays, live
           },
           {
             label: 'Mayorista',
-            data: chartData.dataMay,
+            data: [],
             borderColor: '#10b981',
             borderWidth: 2.5,
             pointRadius: 0,
@@ -81,6 +63,7 @@ export default function BandasChart({ bandas, historicalFiat, fullHolidays, live
       },
       options: {
         responsive: true,
+        animation: false,
         resizeDelay: 200,
         maintainAspectRatio: false,
         plugins: {
@@ -94,7 +77,7 @@ export default function BandasChart({ bandas, historicalFiat, fullHolidays, live
             bodyColor: '#fff',
             borderColor: '#334155',
             borderWidth: 1,
-            callbacks: { label: ctx => ctx.parsed.y ? `${ctx.dataset.label}: ${fmt(ctx.parsed.y)}` : null },
+            callbacks: { label: ctx => ctx.parsed.y != null ? `${ctx.dataset.label}: ${fmt(ctx.parsed.y)}` : null },
           },
         },
         scales: {
@@ -108,25 +91,30 @@ export default function BandasChart({ bandas, historicalFiat, fullHolidays, live
       chartRef.current?.destroy()
       chartRef.current = null
     }
-  }, [chartData, view])
+  }, [view, theme, bandaHoy])
 
-  if (!bandaHoy) return <div className="loading-placeholder">Calculando bandas...</div>
+  useEffect(() => {
+    const chart = chartRef.current
+    if (!chart) return
+    chart.data.labels = [...chartData.labels]
+    chart.data.datasets[0].data = [...chartData.dataSup]
+    chart.data.datasets[1].data = [...chartData.dataInf]
+    chart.data.datasets[2].data = [...chartData.dataMay]
+    chart.update('none')
+  }, [chartData, view, theme, bandaHoy])
+
+  if (!bandaHoy) return <div className="loading-placeholder">Sin datos de bandas para esta fecha.</div>
 
   const { inf, sup } = bandaHoy
   const rango = Math.max(1, sup - inf)
 
-  const posPct = Math.max(0, Math.min(100, ((may - inf) / rango) * 100))
-  const rotation = (posPct / 100) * 180 - 90
-
-  const [boxBg, boxColor] = posPct <= 25 ? ['#10b981', '#fff']
-    : posPct <= 75 ? ['#facc15', '#111b21']
-      : posPct <= 90 ? ['#f97316', '#fff']
-        : ['#ef4444', '#fff']
-
-  const dS = sup - may
-  const pS = may > 0 ? (dS / may) * 100 : 0
-  const dI = may - inf
-  const pI = may > 0 ? (dI / may) * 100 : 0
+  const posPct = getGaugePosition(may, inf, sup)
+  const rotation = ((posPct ?? 0) / 100) * 180 - 90
+  const { color: boxBg, textColor: boxColor } = getZoneInfo(posPct)
+  const dS = may != null ? sup - may : null
+  const dI = may != null ? inf - may : null
+  const pS = may > 0 ? Math.abs(dS / may) * 100 : null
+  const pI = may > 0 ? Math.abs(dI / may) * 100 : null
 
   const c25 = inf + rango * 0.25
   const c75 = inf + rango * 0.75
@@ -137,7 +125,7 @@ export default function BandasChart({ bandas, historicalFiat, fullHolidays, live
       {/* ── Gauge + info row ── */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 30, alignItems: 'flex-start', marginBottom: 25 }}>
         {/* Gauge col */}
-        <div style={{ flex: 1, minWidth: 280, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 10 }}>
+        <div style={{ flex: '1 1 280px', minWidth: 0, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 10 }}>
           <div style={{ position: 'relative', width: '100%', maxWidth: 340, aspectRatio: '2/1', height: 'auto', margin: '20px auto 0' }}>
             <span id="velocimetro-mid" style={{ position: 'absolute', top: -25, left: '50%', transform: 'translateX(-50%)', color: '#9ca3af', fontSize: '0.9em', fontWeight: 'bold' }}>
               {fmt(inf + rango / 2)}
@@ -155,6 +143,7 @@ export default function BandasChart({ bandas, historicalFiat, fullHolidays, live
               maskImage: 'radial-gradient(transparent 55%, black 56%)'
             }} />
             <div id="gauge-needle" style={{
+              display: posPct == null ? 'none' : 'block',
               position: 'absolute', bottom: 0, left: '50%', width: 6, height: 120,
               backgroundColor: '#ffffff', transformOrigin: 'bottom center',
               transform: `translateX(-50%) rotate(${rotation}deg)`,
@@ -176,20 +165,21 @@ export default function BandasChart({ bandas, historicalFiat, fullHolidays, live
               backgroundColor: boxBg, color: boxColor, padding: '4px 16px',
               borderRadius: 8, boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
             }}>
-              {may > 0 ? fmt(may) : '$0,00'}
+              {fmt(may)}
             </div>
+            {!(live > 0) && may != null && <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 6 }}>Última cotización del historial</div>}
           </div>
         </div>
 
         {/* Range table col */}
-        <div style={{ flex: 1.5, minWidth: 280, width: '100%' }}>
+        <div style={{ flex: '1.5 1 350px', minWidth: 0, width: '100%', overflowX: 'auto' }}>
           <table className="data-table" style={{ marginBottom: 20 }}>
             <thead>
               <tr>
-                <th>Estado</th>
-                <th>Rango (%)</th>
-                <th>Valor mínimo</th>
-                <th>Valor máximo</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Rango (%)</th>
+                <th scope="col">Valor mínimo</th>
+                <th scope="col">Valor máximo</th>
               </tr>
             </thead>
             <tbody>
@@ -226,18 +216,16 @@ export default function BandasChart({ bandas, historicalFiat, fullHolidays, live
             borderLeft: '4px solid var(--accent)', display: 'flex', flexDirection: 'column', gap: 8
           }}>
             <div id="diff-sup">
-              El dólar debería subir{' '}
+              Para llegar a la banda superior: {dS == null ? 'sin cotización' : dS >= 0 ? 'subir' : 'bajar'}{' '}
               <span className="badge-green" style={{ marginLeft: '4px' }}>
-                {fmt(dS)} (+{pS.toFixed(2)}%)
-              </span>{' '}
-              para llegar a la banda superior
+                {dS != null ? `${fmt(Math.abs(dS))} (${pS.toFixed(2)}%)` : '—'}
+              </span>
             </div>
             <div id="diff-inf">
-              El dólar debería bajar{' '}
+              Para llegar a la banda inferior: {dI == null ? 'sin cotización' : dI >= 0 ? 'subir' : 'bajar'}{' '}
               <span className="badge-red" style={{ marginLeft: '4px' }}>
-                {fmt(Math.abs(dI))} (-{Math.abs(pI).toFixed(2)}%)
-              </span>{' '}
-              para llegar a la banda inferior
+                {dI != null ? `${fmt(Math.abs(dI))} (${pI.toFixed(2)}%)` : '—'}
+              </span>
             </div>
           </div>
         </div>
@@ -246,15 +234,15 @@ export default function BandasChart({ bandas, historicalFiat, fullHolidays, live
       {/* ── Chart / Table toggle ── */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
         <div style={{ backgroundColor: 'var(--bg-card-solid)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', overflow: 'hidden', padding: 4, gap: 4 }}>
-          <button id="btn-bandas-chart" className="view-toggle-btn" style={{ backgroundColor: view === 'chart' ? 'var(--bg-card-hover)' : 'transparent', color: view === 'chart' ? 'var(--text-main)' : 'var(--text-muted)', border: 'none', padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: view === 'chart' ? 600 : 500, borderRadius: 8 }} onClick={() => setView('chart')}>Gráfico</button>
-          <button id="btn-bandas-table" className="view-toggle-btn" style={{ backgroundColor: view === 'table' ? 'var(--bg-card-hover)' : 'transparent', color: view === 'table' ? 'var(--text-main)' : 'var(--text-muted)', border: 'none', padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: view === 'table' ? 600 : 500, borderRadius: 8 }} onClick={() => setView('table')}>Tabla</button>
+          <button id="btn-bandas-chart" type="button" aria-pressed={view === 'chart'} className="view-toggle-btn" style={{ backgroundColor: view === 'chart' ? 'var(--bg-card-hover)' : 'transparent', color: view === 'chart' ? 'var(--text-main)' : 'var(--text-muted)', border: 'none', padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: view === 'chart' ? 600 : 500, borderRadius: 8 }} onClick={() => setView('chart')}>Gráfico</button>
+          <button id="btn-bandas-table" type="button" aria-pressed={view === 'table'} className="view-toggle-btn" style={{ backgroundColor: view === 'table' ? 'var(--bg-card-hover)' : 'transparent', color: view === 'table' ? 'var(--text-main)' : 'var(--text-muted)', border: 'none', padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: view === 'table' ? 600 : 500, borderRadius: 8 }} onClick={() => setView('table')}>Tabla</button>
         </div>
       </div>
 
       {/* ── Chart view ── */}
       {view === 'chart' && (
         <div id="bandas-chart-view" style={{ height: 250, width: '100%', position: 'relative' }}>
-          <canvas id="bandasChart" ref={canvasRef} />
+          <canvas id="bandasChart" ref={canvasRef} role="img" aria-label="Evolución de las bandas y el dólar mayorista. Cambiá a Tabla para consultar los valores por fecha." />
         </div>
       )}
 
@@ -264,10 +252,10 @@ export default function BandasChart({ bandas, historicalFiat, fullHolidays, live
           <table className="data-table" style={{ fontSize: 13, margin: 0, width: '100%', textAlign: 'left', border: 'none' }}>
             <thead style={{ position: 'sticky', top: 0, backgroundColor: 'var(--bg-card-solid)', zIndex: 10, borderBottom: '1px solid var(--border-color)' }}>
               <tr>
-                <th style={{ padding: 8 }}>Fecha</th>
-                <th style={{ padding: 8 }}>Mayorista</th>
-                <th style={{ padding: 8 }}>Techo</th>
-                <th style={{ padding: 8 }}>Piso</th>
+                <th scope="col" style={{ padding: 8 }}>Fecha</th>
+                <th scope="col" style={{ padding: 8 }}>Mayorista</th>
+                <th scope="col" style={{ padding: 8 }}>Techo</th>
+                <th scope="col" style={{ padding: 8 }}>Piso</th>
               </tr>
             </thead>
             <tbody id="bandas-table-wrapper-body">

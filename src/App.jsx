@@ -1,105 +1,80 @@
-import React, { useState, useEffect, useMemo } from 'react'
-import TopNav    from './components/TopNav'
-import TabResumen from './tabs/TabResumen'
-import TabDolares from './tabs/TabDolares'
-import TabTasas   from './tabs/TabTasas'
-import { useSnapshot  } from './hooks/useSnapshot'
-import { useLiveData  } from './hooks/useLiveData'
+import { lazy, Suspense, useState, useEffect, useMemo } from 'react'
+import TopNav from './components/TopNav'
+import DataStatus from './components/DataStatus'
+import { useSnapshot } from './hooks/useSnapshot'
+import { useLiveData } from './hooks/useLiveData'
 import { useTasasData } from './hooks/useTasasData'
 import { generateDatosBandas } from './utils/bandas'
+import { mergeIpcHistory } from './utils/format'
+import { buildDashboardData, getTabFromSearch } from './utils/dashboard'
+
+const TabResumen = lazy(() => import('./tabs/TabResumen'))
+const TabDolares = lazy(() => import('./tabs/TabDolares'))
+const TabTasas = lazy(() => import('./tabs/TabTasas'))
 
 export default function App() {
-  // Support tab selection via query parameter (e.g. ?tab=dolares from PWA shortcuts)
-  const getInitialTab = () => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search)
-      const tab = params.get('tab')
-      if (tab && ['resumen', 'dolares', 'tasas', 'tasas-cripto'].includes(tab)) {
-        return tab
-      }
-    }
-    return 'resumen'
-  }
-
-  const [activeTab, setActiveTab] = useState(getInitialTab)
-  const [theme, setTheme] = useState(() => {
-    if (typeof document !== 'undefined') {
-      return document.documentElement.getAttribute('data-theme') || 'dark'
-    }
-    return 'dark'
-  })
-
-  const { snapshot, loading: snapLoading } = useSnapshot()
-  const { data: liveData } = useLiveData()
+  const [activeTab, setActiveTab] = useState(() => getTabFromSearch(window.location.search))
+  const [theme, setTheme] = useState(() => document.documentElement.dataset.theme || 'dark')
+  const [refreshing, setRefreshing] = useState(false)
+  const snapshotState = useSnapshot()
+  const liveState = useLiveData()
   const tasas = useTasasData()
+  const { snapshot } = snapshotState
+  const liveData = liveState.data
 
-  const [bandas, setBandas] = useState([])
-  useEffect(() => {
-    const ipc = snapshot?.argentina_macro?.ipc_history
-    if (ipc) setBandas(generateDatosBandas(ipc))
-  }, [snapshot])
+  const ipcHistory = useMemo(() => mergeIpcHistory(snapshot?.argentina_macro?.ipc_history, liveData?.liveInflation), [snapshot, liveData?.liveInflation])
+  const bandas = useMemo(() => generateDatosBandas(ipcHistory), [ipcHistory])
+  const dashboardData = useMemo(() => buildDashboardData(snapshot, liveData, tasas), [snapshot, liveData, tasas])
 
   useEffect(() => {
-    setTheme(document.documentElement.getAttribute('data-theme') || 'dark')
+    const handleBack = () => setActiveTab(getTabFromSearch(window.location.search))
+    window.addEventListener('popstate', handleBack)
+    return () => window.removeEventListener('popstate', handleBack)
   }, [])
 
-  const enrichedLiveData = useMemo(() => {
-    return liveData
-      ? {
-          ...liveData,
-          _bestYield:  tasas?.bestYield  ?? null,
-          _bestPF:     tasas?.bestPF     ?? null,
-          _bestCrypto: tasas?.bestCrypto ?? null,
-        }
-      : null
-  }, [liveData, tasas])
+  function handleTabChange(tab) {
+    if (tab === activeTab) return
+    const url = new URL(window.location.href)
+    url.searchParams.set('tab', tab)
+    window.history.pushState(null, '', url)
+    setActiveTab(tab)
+  }
 
   function handleThemeToggle() {
     const next = theme === 'dark' ? 'light' : 'dark'
-    document.documentElement.setAttribute('data-theme', next)
-    localStorage.setItem('theme-preference', next)
+    document.documentElement.dataset.theme = next
+    document.documentElement.style.colorScheme = next
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', next === 'dark' ? '#0A0F1C' : '#f8fafc')
+    try { localStorage.setItem('theme-preference', next) } catch { /* The theme still works without storage. */ }
     setTheme(next)
   }
 
-  if (snapLoading && !snapshot) {
-     return <div className="loading-screen">Cargando Dashboard...</div>
+  async function handleRefresh() {
+    if (refreshing) return
+    setRefreshing(true)
+    try {
+      await Promise.allSettled([snapshotState.refetch(), liveState.refetch(), tasas.refetch()])
+    } finally {
+      setRefreshing(false)
+    }
   }
+
+  const labelId = activeTab.startsWith('tasas') ? 'tab-tasas-btn' : activeTab === 'dolares' ? 'tab-argentina-btn' : 'tab-resumen-btn'
 
   return (
     <div className="app">
-      <TopNav
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        onThemeToggle={handleThemeToggle}
-        theme={theme}
-      />
-      <div className="main-content">
-        {activeTab === 'resumen' && (
-          <div className="tab-pane active">
-            <TabResumen
-              snapshot={snapshot}
-              liveData={enrichedLiveData}
-              bandas={bandas}
-              liveInflation={liveData?.liveInflation}
-            />
-          </div>
-        )}
-        {activeTab === 'dolares' && (
-          <div className="tab-pane active">
-            <TabDolares
-              snapshot={snapshot}
-              liveData={enrichedLiveData}
-              bandas={bandas}
-              historicalFiat={snapshot?.historical_fiat}
-            />
-          </div>
-        )}
-        {(activeTab === 'tasas' || activeTab === 'tasas-cripto') && (
-          <div className="tab-pane active">
-            <TabTasas tasas={tasas} displayMode={activeTab === 'tasas' ? 'pesos' : 'cripto'} />
-          </div>
-        )}
-      </div>
+      <a className="skip-link" href="#dashboard-panel">Ir al contenido</a>
+      <TopNav activeTab={activeTab} onTabChange={handleTabChange} onThemeToggle={handleThemeToggle} theme={theme} />
+      <main className="main-content">
+        <DataStatus snapshotState={snapshotState} liveState={liveState} tasas={tasas} data={dashboardData} onRefresh={handleRefresh} refreshing={refreshing} />
+        <section id="dashboard-panel" className="tab-pane active" role="tabpanel" aria-labelledby={labelId} tabIndex={0} key={activeTab}>
+          <Suspense fallback={<div className="loading-placeholder" role="status">Cargando sección…</div>}>
+            {activeTab === 'resumen' && <TabResumen snapshot={snapshot} liveData={dashboardData} liveInflation={liveData?.liveInflation} theme={theme} />}
+            {activeTab === 'dolares' && <TabDolares snapshot={snapshot} liveData={dashboardData} bandas={bandas} historicalFiat={snapshot?.historical_fiat} theme={theme} />}
+            {activeTab.startsWith('tasas') && <TabTasas tasas={tasas} displayMode={activeTab === 'tasas' ? 'pesos' : 'cripto'} />}
+          </Suspense>
+        </section>
+      </main>
     </div>
   )
 }

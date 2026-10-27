@@ -10,26 +10,52 @@ export default function TopNav({ activeTab, onTabChange, onThemeToggle, theme })
       setDeferredPrompt(e)
     }
     window.addEventListener('beforeinstallprompt', handler)
-    return () => window.removeEventListener('beforeinstallprompt', handler)
+    const handleInstalled = () => setDeferredPrompt(null)
+    window.addEventListener('appinstalled', handleInstalled)
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler)
+      window.removeEventListener('appinstalled', handleInstalled)
+    }
   }, [])
 
   async function handleInstallClick() {
     if (!deferredPrompt) return
-    deferredPrompt.prompt()
-    const { outcome } = await deferredPrompt.userChoice
-    if (outcome === 'accepted') {
+    try {
+      await deferredPrompt.prompt()
+      await deferredPrompt.userChoice
+    } catch (error) {
+      console.warn('No se pudo abrir la instalación:', error)
+    } finally {
+      // The browser installation prompt is single-use, even after dismissal.
       setDeferredPrompt(null)
     }
   }
 
+  function handleTabKeyDown(event) {
+    const tabs = [...event.currentTarget.querySelectorAll('[role="tab"]')]
+    const index = tabs.indexOf(document.activeElement)
+    if (index < 0) return
+    let next
+    if (event.key === 'ArrowRight') next = (index + 1) % tabs.length
+    else if (event.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length
+    else if (event.key === 'Home') next = 0
+    else if (event.key === 'End') next = tabs.length - 1
+    else return
+    event.preventDefault()
+    tabs[next].focus()
+    tabs[next].click()
+  }
+
   return (
-    <nav className="top-nav">
+    <nav className="top-nav" aria-label="Navegación del dashboard">
       <div className="nav-container">
-        <div className="nav-tabs-group" role="tablist">
+        <div className="nav-tabs-group" role="tablist" aria-label="Secciones" onKeyDown={handleTabKeyDown}>
           <button
             id="tab-resumen-btn"
             role="tab"
             aria-selected={activeTab === 'resumen'}
+            aria-controls="dashboard-panel"
+            tabIndex={activeTab === 'resumen' ? 0 : -1}
             className={`nav-tab ${activeTab === 'resumen' ? 'active' : ''}`}
             onClick={() => onTabChange('resumen')}
           >
@@ -39,6 +65,8 @@ export default function TopNav({ activeTab, onTabChange, onThemeToggle, theme })
             id="tab-argentina-btn"
             role="tab"
             aria-selected={activeTab === 'dolares'}
+            aria-controls="dashboard-panel"
+            tabIndex={activeTab === 'dolares' ? 0 : -1}
             className={`nav-tab ${activeTab === 'dolares' ? 'active' : ''}`}
             onClick={() => onTabChange('dolares')}
           >
@@ -48,6 +76,8 @@ export default function TopNav({ activeTab, onTabChange, onThemeToggle, theme })
             id="tab-tasas-btn"
             role="tab"
             aria-selected={isTasasActive}
+            aria-controls="dashboard-panel"
+            tabIndex={isTasasActive ? 0 : -1}
             className={`nav-tab ${isTasasActive ? 'active' : ''}`}
             onClick={() => onTabChange('tasas')}
           >
@@ -67,7 +97,7 @@ export default function TopNav({ activeTab, onTabChange, onThemeToggle, theme })
             </button>
           )}
 
-          <button id="theme-toggle" className="theme-toggle-btn" onClick={onThemeToggle} title="Cambiar Tema" aria-label="Cambiar tema">
+          <button id="theme-toggle" className="theme-toggle-btn" onClick={onThemeToggle} title="Cambiar tema" aria-label={`Activar tema ${theme === 'dark' ? 'claro' : 'oscuro'}`}>
             <svg id="sun-icon" className="theme-icon" style={{ display: theme === 'dark' ? 'block' : 'none' }} viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="5"></circle>
               <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -86,9 +116,10 @@ export default function TopNav({ activeTab, onTabChange, onThemeToggle, theme })
         </div>
       </div>
 
-      <div id="sub-tabs-tasas" className="sub-tabs-container" style={{ display: isTasasActive ? 'flex' : 'none' }}>
+      <div id="sub-tabs-tasas" className="sub-tabs-container" role="group" aria-label="Tipo de tasas" style={{ display: isTasasActive ? 'flex' : 'none' }}>
         <button
           id="tasas-pesos-btn"
+          aria-pressed={activeTab === 'tasas'}
           className={`sub-tab ${activeTab === 'tasas' ? 'active' : ''}`}
           onClick={() => onTabChange('tasas')}
         >
@@ -96,6 +127,7 @@ export default function TopNav({ activeTab, onTabChange, onThemeToggle, theme })
         </button>
         <button
           id="tasas-cripto-btn"
+          aria-pressed={activeTab === 'tasas-cripto'}
           className={`sub-tab ${activeTab === 'tasas-cripto' ? 'active' : ''}`}
           onClick={() => onTabChange('tasas-cripto')}
         >

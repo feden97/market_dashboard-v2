@@ -17,6 +17,8 @@ from io import BytesIO
 import numpy as np
 import pandas as pd
 import requests
+from pathlib import Path
+from data_utils import normalize_ipc_items
 
 try:
     import investpy
@@ -112,11 +114,7 @@ def get_argentina_macro_data() -> dict:
         resp = SESSION.get(f"{ARG_DATOS_BASE}/finanzas/indices/inflacion", timeout=10)
         resp.raise_for_status()
         items = resp.json()
-        macro["ipc_history"] = {
-            item["fecha"][:7]: (item["valor"] / 100 if item["valor"] > 1 else item["valor"])
-            for item in items
-            if item.get("fecha") and item.get("valor") is not None
-        }
+        macro["ipc_history"] = normalize_ipc_items(items)
     except Exception as e:
         print(f"Error fetching inflation: {e}")
 
@@ -241,7 +239,7 @@ def get_historical_fiat_data(out_dir: str = "data") -> list[dict] | None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build dashboard snapshot data.")
-    parser.add_argument("--out-dir", default="data", help="Output directory (default: data)")
+    parser.add_argument("--out-dir", default=str(Path(__file__).resolve().parents[1] / "public" / "data"), help="Output directory (default: public/data)")
     args = parser.parse_args()
 
     out_dir    = args.out_dir

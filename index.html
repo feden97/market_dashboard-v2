@@ -19,35 +19,38 @@
   <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
 
   <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
   <script>
     // Apply theme before first paint to avoid flash
     (function () {
-      const saved = localStorage.getItem('theme-preference');
-      const system = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const theme = saved ?? (system ? 'dark' : 'light');
+      let saved;
+      try { saved = localStorage.getItem('theme-preference'); } catch (_) {}
+      const system = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = saved === 'dark' || saved === 'light' ? saved : (system ? 'dark' : 'light');
       document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.style.colorScheme = theme;
     })();
+  </script>
+  <script>
+    // Run before the module graph: an old worker can otherwise prevent the
+    // development entry point (and its worker cleanup) from loading at all.
+    if ('%DEV%' === 'true' && 'serviceWorker' in navigator) {
+      const appScope = new URL('./', window.location.href).href;
+      navigator.serviceWorker.getRegistrations().then(async (registrations) => {
+        const ownWorkers = registrations.filter((registration) => registration.scope === appScope);
+        const wasControlled = Boolean(navigator.serviceWorker.controller);
+        await Promise.all(ownWorkers.map((registration) => registration.unregister()));
+        if (ownWorkers.length && wasControlled) window.location.reload();
+      }).catch((error) => console.warn('Could not remove development service worker:', error));
+    }
   </script>
 </head>
 <body>
+  <noscript>Activá JavaScript en tu navegador para ver el dashboard financiero.</noscript>
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
-
-  <!-- PWA Service Worker Registration -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then((reg) => {
-            console.log('PWA ServiceWorker registered with scope:', reg.scope);
-          })
-          .catch((err) => {
-            console.warn('PWA ServiceWorker registration failed:', err);
-          });
-      });
-    }
-  </script>
 </body>
 </html>

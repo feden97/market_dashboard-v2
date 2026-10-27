@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react'
-import { formatARS, calcIpcStats, getLast12IPC } from '../utils/format'
+import React, { useMemo } from 'react'
+import { formatARS, calcIpcStats, getLast12IPC, mergeIpcHistory } from '../utils/format'
 import { EntityIcon } from '../utils/icons'
 import InflacionChart from '../charts/InflacionChart'
 
@@ -27,35 +27,27 @@ function RadarCard({ icon, label, value, entity, detail, iconStyle }) {
   )
 }
 
-export default function TabResumen({ snapshot, liveData, liveInflation }) {
-  const [ipcStats, setIpcStats] = useState(null)
-
-  useEffect(() => {
-    const ipc = snapshot?.argentina_macro?.ipc_history
-    if (!ipc) return
-    const merged = { ...ipc }
-    if (Array.isArray(liveInflation)) {
-      liveInflation.forEach(item => {
-        if (item?.fecha && typeof item.fecha === 'string' && item?.valor != null) {
-          merged[item.fecha.substring(0, 7)] = item.valor > 1 ? item.valor / 100 : item.valor
-        }
-      })
-    }
-    const last12 = getLast12IPC(merged)
-    if (last12.length) setIpcStats({ ...calcIpcStats(last12), last12 })
+export default function TabResumen({ snapshot, liveData, liveInflation, theme }) {
+  const ipcStats = useMemo(() => {
+    const last12 = getLast12IPC(mergeIpcHistory(snapshot?.argentina_macro?.ipc_history, liveInflation))
+    return last12.length ? { ...calcIpcStats(last12), last12 } : null
   }, [snapshot, liveInflation])
 
   const fiat = liveData?.fiat
   const usdt = liveData?.usdt
 
   const allPrices = useMemo(() => fiat ? [
-    { name: 'Oficial', price: fiat.oficial?.price },
-    { name: 'MEP',     price: fiat.mep?.price },
-    { name: 'CCL',     price: fiat.ccl?.price },
-    { name: 'Blue',    price: fiat.blue?.price },
-    { name: 'USDT',    price: usdt?.maxVenta },
+    { name: 'Oficial', price: fiat.oficial?.price, historical: fiat.oficial?.historical },
+    { name: 'MEP',     price: fiat.mep?.price, historical: fiat.mep?.historical },
+    { name: 'CCL',     price: fiat.ccl?.price, historical: fiat.ccl?.historical },
+    { name: 'Blue',    price: fiat.blue?.price, historical: fiat.blue?.historical },
+    { name: 'USDT',    price: usdt?.maxVenta, historical: usdt?.historical },
   ].filter(d => d.price > 0) : [], [fiat, usdt])
-  const cheapest = useMemo(() => allPrices.length ? allPrices.reduce((a, b) => a.price < b.price ? a : b) : null, [allPrices])
+  const cheapest = useMemo(() => {
+    const live = allPrices.filter(quote => !quote.historical)
+    const comparable = live.length ? live : allPrices
+    return comparable.length ? comparable.reduce((a, b) => a.price < b.price ? a : b) : null
+  }, [allPrices])
 
   const purchasingPower = useMemo(() => {
     return ipcStats
@@ -64,7 +56,7 @@ export default function TabResumen({ snapshot, liveData, liveInflation }) {
   }, [ipcStats])
 
   const macro = snapshot?.argentina_macro
-  const holidays = macro?.holidays ?? []
+  const holidays = Array.isArray(macro?.holidays) ? macro.holidays : []
 
   return (
     <div className="panel-ancho">
@@ -84,8 +76,9 @@ export default function TabResumen({ snapshot, liveData, liveInflation }) {
             </svg>
           }
           label="DÓLAR MÁS BARATO"
-          value={cheapest ? formatARS(cheapest.price) : '$0,00'}
-          entity={cheapest?.name ?? '...'}
+          value={cheapest ? formatARS(cheapest.price) : '—'}
+          entity={cheapest?.name ?? 'Sin cotizaciones disponibles'}
+          detail={cheapest?.historical ? `Histórico del ${liveData.historicalDate}` : null}
         />
 
         {/* Mejor cuenta remunerada */}
@@ -102,8 +95,8 @@ export default function TabResumen({ snapshot, liveData, liveInflation }) {
             )
           }
           label="MEJOR CUENTA (TNA)"
-          value={liveData?._bestYield?.rate ? `${liveData._bestYield.rate}%` : '0,00%'}
-          entity={liveData?._bestYield?.name ?? '...'}
+          value={liveData?._bestYield?.rate ? `${liveData._bestYield.rate}%` : '—'}
+          entity={liveData?._bestYield?.name ?? 'Sin datos disponibles'}
         />
 
         {/* Mejor plazo fijo */}
@@ -119,8 +112,8 @@ export default function TabResumen({ snapshot, liveData, liveInflation }) {
             )
           }
           label="MEJOR PLAZO FIJO (TNA)"
-          value={liveData?._bestPF?.rate ? `${liveData._bestPF.rate}%` : '0,00%'}
-          entity={liveData?._bestPF?.name ?? '...'}
+          value={liveData?._bestPF?.rate ? `${liveData._bestPF.rate}%` : '—'}
+          entity={liveData?._bestPF?.name ?? 'Sin datos disponibles'}
         />
 
         {/* Mejor APY stablecoins */}
@@ -137,8 +130,8 @@ export default function TabResumen({ snapshot, liveData, liveInflation }) {
             )
           }
           label="MEJOR APY STABLES"
-          value={liveData?._bestCrypto?.rate ? `${liveData._bestCrypto.rate}%` : '0,00%'}
-          entity={liveData?._bestCrypto?.name ?? '...'}
+          value={liveData?._bestCrypto?.rate ? `${liveData._bestCrypto.rate}%` : '—'}
+          entity={liveData?._bestCrypto?.name ?? 'Sin datos disponibles'}
           detail={liveData?._bestCrypto?.coin ? `(${liveData._bestCrypto.coin})` : ''}
         />
       </div>
@@ -182,7 +175,7 @@ export default function TabResumen({ snapshot, liveData, liveInflation }) {
             </div>
 
             <div className="inf-chart-container">
-              <InflacionChart ipcHistory={macro?.ipc_history} liveInflation={liveInflation} />
+              <InflacionChart ipcHistory={macro?.ipc_history} liveInflation={liveInflation} theme={theme} />
             </div>
 
             <div className="inf-footer-card">
@@ -204,7 +197,7 @@ export default function TabResumen({ snapshot, liveData, liveInflation }) {
                 <li key={i}>{h}</li>
               ))
             ) : (
-              <li className="text-muted">Cargando datos...</li>
+              <li className="text-muted">No hay próximos feriados en el histórico disponible.</li>
             )}
           </ul>
         </div>

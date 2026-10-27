@@ -1,46 +1,21 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { Chart, registerables } from 'chart.js'
-
-Chart.register(...registerables)
+import React, { useEffect, useMemo, useRef } from 'react'
+import { Chart } from './chartRuntime'
+import { buildSpreadData } from '../utils/spread'
 
 const BASE_LABELS = { usdt: 'USDT', oficial: 'Oficial', mep: 'MEP', ccl: 'CCL', blue: 'Blue' }
 
-export default function SpreadChart({ historicalFiat, liveData, base, setBase }) {
+export default function SpreadChart({ historicalFiat, liveData, base, setBase, theme }) {
   const canvasRef = useRef(null)
   const chartRef = useRef(null)
-  const [summary, setSummary] = useState({ cclWins: 0, baseWins: 0 })
+  const series = useMemo(() => buildSpreadData(historicalFiat, liveData, base), [historicalFiat, liveData, base])
+  const { summary } = series
 
-  function buildHistoricalData(baseCurrency) {
-    if (!historicalFiat?.length) return { labels: [], data: [] }
-    const labels = [], data = []
-
-    for (const d of historicalFiat) {
-      const target = d.ccl
-      const baseVal = baseCurrency === 'usdt' ? d.usdt : d[baseCurrency]
-      if (target && baseVal && baseVal > 0) {
-        labels.push(d.date)
-        data.push(parseFloat((((target / baseVal) - 1) * 100).toFixed(2)))
-      }
-    }
-    return { labels, data }
-  }
-
-  function calcSummary(data) {
-    let cclWins = 0, baseWins = 0
-    data.forEach(v => { if (v > 0) cclWins++; else if (v < 0) baseWins++ })
-    return { cclWins, baseWins }
-  }
-
-  // 1) Carga inicial e histórica (se ejecuta una vez o al cambiar 'base')
+  // Create an instance only for canvas/configuration changes; stream data separately.
   useEffect(() => {
-    if (!historicalFiat?.length) return
-
-    const isLight = document.documentElement.getAttribute('data-theme') === 'light'
+    if (!canvasRef.current) return
+    const isLight = (theme || document.documentElement.getAttribute('data-theme')) === 'light'
     const gridColor = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'
     const textColor = isLight ? '#64748b' : '#aaaaaa'
-
-    const { labels, data } = buildHistoricalData(base)
-    setSummary(calcSummary(data))
 
     const zonesPlugin = {
       id: 'zones',
@@ -106,9 +81,9 @@ export default function SpreadChart({ historicalFiat, liveData, base, setBase })
     chartRef.current = new Chart(canvasRef.current, {
       type: 'line',
       data: {
-        labels,
+        labels: [],
         datasets: [{
-          data,
+          data: [],
           borderWidth: 2.5,
           pointRadius: ctx => ctx.dataIndex === ctx.dataset.data.length - 1 ? 4 : 0,
           pointBackgroundColor: ctx => ctx.dataset.data[ctx.dataIndex] >= 0
@@ -162,36 +137,20 @@ export default function SpreadChart({ historicalFiat, liveData, base, setBase })
       plugins: [zonesPlugin, zeroLinePlugin],
     })
 
-    return () => chartRef.current?.destroy()
-  }, [historicalFiat, base])
-
-  // 2) Actualizador Suave: Solo inserta los datos en vivo sin recrear los gráficos
-  useEffect(() => {
-    if (!chartRef.current || !liveData?.fiat || !liveData?.usdt) return
-
-    const cclLive = liveData.fiat.ccl?.price
-    const basePrice = base === 'usdt' ? liveData.usdt?.maxVenta : liveData.fiat?.[base]?.price
-
-    if (cclLive && basePrice > 0) {
-      const liveSpread = parseFloat((((cclLive / basePrice) - 1) * 100).toFixed(2))
-      const now = new Date()
-      const nowStr = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`
-
-      const chart = chartRef.current
-      const labels = chart.data?.labels
-      const data = chart.data?.datasets?.[0]?.data
-
-      if (labels && data) {
-        if (labels.at(-1) === nowStr) {
-          data[data.length - 1] = liveSpread
-        } else {
-          labels.push(nowStr)
-          data.push(liveSpread)
-        }
-        chart.update('none')
-      }
+    return () => {
+      chartRef.current?.destroy()
+      chartRef.current = null
     }
-  }, [liveData, base])
+  }, [base, theme])
+
+  useEffect(() => {
+    const chart = chartRef.current
+    if (!chart) return
+    // Chart.js mutates its input arrays; copy to keep memoized series immutable.
+    chart.data.labels = [...series.labels]
+    chart.data.datasets[0].data = [...series.data]
+    chart.update('none')
+  }, [series, base, theme])
 
   return (
     <div>
@@ -203,6 +162,8 @@ export default function SpreadChart({ historicalFiat, liveData, base, setBase })
           {Object.entries(BASE_LABELS).map(([val, lbl]) => (
             <button
               key={val}
+              type="button"
+              aria-pressed={base === val}
               className={`base-pill${base === val ? ' active' : ''}`}
               onClick={() => setBase(val)}
             >
@@ -213,7 +174,8 @@ export default function SpreadChart({ historicalFiat, liveData, base, setBase })
       </div>
 
       <div style={{ height: 220, position: 'relative' }}>
-        <canvas ref={canvasRef} />
+        <canvas ref={canvasRef} role="img" aria-label={`Spread porcentual CCL frente a ${BASE_LABELS[base]}. CCL por encima: ${summary.cclWins} días. Por debajo: ${summary.baseWins} días.`} />
+        {!series.data.length && <p className="chart-empty">Sin cotizaciones disponibles para este período.</p>}
       </div>
 
       <div className="data-summary-row">

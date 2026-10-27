@@ -1,123 +1,126 @@
-// ── Bandas de flotación BCRA ──────────────────────────────────────
-// Starting values as of 2026-01-01 (matching original app.js)
+import { toFiniteNumber } from './format.js'
 
+// Existing model: 2026-01-01 baseline, two-month IPC lag, 2% fallback.
+// These parameters preserve the original calculation; they are not a live policy feed.
 const INF_START = 916.275
 const SUP_START = 1526.596
+const FALLBACK_IPC = 0.02
 
-function getDaysInMonth(y, m) {
-  return new Date(y, m + 1, 0).getDate()
+function startOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
 }
 
-function getIPCForMonth(ipcHistory, y, m) {
-  // Use IPC from 2 months prior (same logic as original)
-  let tM = m - 2, tY = y
-  if (tM < 0) { tM += 12; tY -= 1 }
-  const key = `${tY}-${String(tM + 1).padStart(2, '0')}`
-  return parseFloat(ipcHistory?.[key] ?? '0.02')
+function dateKey(date) {
+  return `${String(date.getDate()).padStart(2, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`
 }
 
-/**
- * Generate daily banda data from 2026-01-01 to today + 30 days.
- * Returns [{date: "DD-MM-YYYY", inf: number, sup: number}]
- */
-export function generateDatosBandas(ipcHistory) {
+function parseDate(key) {
+  if (typeof key !== 'string' || !/^\d{2}-\d{2}-\d{4}$/.test(key)) return null
+  const [day, month, year] = key.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
+  return date.getDate() === day && date.getMonth() === month - 1 && date.getFullYear() === year ? date : null
+}
+
+function getIPCForMonth(ipcHistory, year, month) {
+  const lag = new Date(year, month - 2, 1)
+  const key = `${lag.getFullYear()}-${String(lag.getMonth() + 1).padStart(2, '0')}`
+  const ipc = toFiniteNumber(ipcHistory?.[key])
+  // Both bases of the daily powers must stay positive.
+  return ipc != null && ipc > -1 && ipc < 1 ? ipc : FALLBACK_IPC
+}
+
+/** Generate daily model values through now + 30 days (dates are calendar days). */
+export function generateDatosBandas(ipcHistory, now = new Date()) {
+  if (!(now instanceof Date) || !Number.isFinite(now.getTime())) return []
   const result = []
-  const dStart = new Date(2026, 0, 1)
-  const dEnd   = new Date()
-  dEnd.setDate(dEnd.getDate() + 30)
-
+  const end = startOfDay(now)
+  end.setDate(end.getDate() + 30)
   let currentInf = INF_START
   let currentSup = SUP_START
 
-  for (let d = new Date(dStart); d <= dEnd; d.setDate(d.getDate() + 1)) {
-    const m = d.getMonth()
-    const y = d.getFullYear()
-    const ipc  = getIPCForMonth(ipcHistory, y, m)
-    const days = getDaysInMonth(y, m)
-
+  for (const date = new Date(2026, 0, 1); date <= end; date.setDate(date.getDate() + 1)) {
+    const month = date.getMonth()
+    const year = date.getFullYear()
+    const ipc = getIPCForMonth(ipcHistory, year, month)
+    const days = new Date(year, month + 1, 0).getDate()
     currentSup *= Math.pow(1 + ipc, 1 / days)
     currentInf *= Math.pow(1 - ipc, 1 / days)
-
-    result.push({
-      date: `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`,
-      inf: +currentInf.toFixed(2),
-      sup: +currentSup.toFixed(2),
-    })
+    result.push({ date: dateKey(date), inf: +currentInf.toFixed(2), sup: +currentSup.toFixed(2) })
   }
-
   return result
 }
 
-/** Find today's banda entry */
-export function getBandaForToday(bandas) {
-  const today = new Date()
-  const todayStr = `${String(today.getDate()).padStart(2, '0')}-${String(today.getMonth() + 1).padStart(2, '0')}-${today.getFullYear()}`
-  return (
-    bandas.find(b => b.date === todayStr) ??
-    [...bandas].reverse().find(b => {
-      const [dd, mm, yyyy] = b.date.split('-')
-      return new Date(+yyyy, +mm - 1, +dd) <= today
-    }) ??
-    bandas[0] ??
-    null
-  )
+/** Latest available entry at or before today; never substitute a future value. */
+export function getBandaForToday(bandas, now = new Date()) {
+  const today = startOfDay(now)
+  let latest = null
+  let latestTime = -Infinity
+  for (const entry of Array.isArray(bandas) ? bandas : []) {
+    const date = parseDate(entry?.date)
+    if (date && date <= today && date.getTime() > latestTime) {
+      latest = entry
+      latestTime = date.getTime()
+    }
+  }
+  return latest
 }
 
-/** Build chart-ready arrays (business days only, up to today) */
-export function buildBandasChartData(bandas, historicalFiat, fullHolidays = [], liveMayorista = 0) {
-  const today    = new Date()
-  const todayStr = `${String(today.getDate()).padStart(2, '0')}-${String(today.getMonth() + 1).padStart(2, '0')}-${today.getFullYear()}`
-
-  const mayoristaMap = Object.fromEntries(
-    (historicalFiat || []).filter(d => d.mayorista).map(d => [d.date, d.mayorista])
-  )
+/** Business-day history plus today's entry, including a valid live quote if supplied. */
+export function buildBandasChartData(bandas, historicalFiat, fullHolidays = [], liveMayorista = 0, now = new Date()) {
+  const today = startOfDay(now)
+  const todayStr = dateKey(today)
+  const holidays = new Set(Array.isArray(fullHolidays) ? fullHolidays : [])
+  const mayoristaMap = new Map()
+  for (const row of Array.isArray(historicalFiat) ? historicalFiat : []) {
+    const price = toFiniteNumber(row?.mayorista)
+    if (price != null && price > 0) mayoristaMap.set(row.date, price)
+  }
+  const rows = (Array.isArray(bandas) ? bandas : [])
+    .map(entry => ({ entry, date: parseDate(entry?.date) }))
+    .filter(({ entry, date }) => date && date <= today && Number.isFinite(entry.inf) && Number.isFinite(entry.sup))
+    .sort((a, b) => a.date - b.date)
 
   const labels = [], dataSup = [], dataInf = [], dataMay = []
-
-  for (const b of bandas) {
-    const [dd, mm, yyyy] = b.date.split('-')
-    const bDate   = new Date(+yyyy, +mm - 1, +dd)
-    const isWknd  = bDate.getDay() === 0 || bDate.getDay() === 6
-    const isoDate = `${yyyy}-${mm}-${dd}`
-    const isHoliday = fullHolidays.includes(isoDate)
-
-    if (bDate > today && b.date !== todayStr) continue
-    if ((isWknd || isHoliday) && bDate < today && b.date !== todayStr) continue
-
-    labels.push(b.date)
-    dataSup.push(b.sup)
-    dataInf.push(b.inf)
-    dataMay.push(mayoristaMap[b.date] ?? null)
+  for (const { entry, date } of rows) {
+    const isToday = entry.date === todayStr
+    const isWeekend = date.getDay() === 0 || date.getDay() === 6
+    const isoDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    if (!isToday && (isWeekend || holidays.has(isoDate))) continue
+    labels.push(entry.date)
+    dataSup.push(entry.sup)
+    dataInf.push(entry.inf)
+    dataMay.push(mayoristaMap.get(entry.date) ?? null)
   }
 
-  // Inject live mayorista
-  if (liveMayorista > 0) {
-    const bandaHoy = getBandaForToday(bandas)
+  const live = toFiniteNumber(liveMayorista)
+  if (live != null && live > 0) {
+    const bandaHoy = getBandaForToday(bandas, today)
     if (bandaHoy) {
-      if (labels.at(-1) === todayStr) {
-        dataMay[dataMay.length - 1] = liveMayorista
-      } else {
+      if (labels.at(-1) === todayStr) dataMay[dataMay.length - 1] = live
+      else {
         labels.push(todayStr)
         dataSup.push(bandaHoy.sup)
         dataInf.push(bandaHoy.inf)
-        dataMay.push(liveMayorista)
+        dataMay.push(live)
       }
     }
   }
-
   return { labels, dataSup, dataInf, dataMay }
 }
 
-/** Get gauge position 0-100% within the band */
+/** Gauge position in [0,100], or null when no valid quote/range is available. */
 export function getGaugePosition(mayorista, inf, sup) {
-  const rango = Math.max(1, sup - inf)
-  return Math.max(0, Math.min(100, ((mayorista - inf) / rango) * 100))
+  mayorista = toFiniteNumber(mayorista)
+  inf = toFiniteNumber(inf)
+  sup = toFiniteNumber(sup)
+  if (mayorista == null || mayorista <= 0 || inf == null || sup == null || sup <= inf) return null
+  return Math.max(0, Math.min(100, ((mayorista - inf) / (sup - inf)) * 100))
 }
 
-/** Get zone label and color for a position 0-100 */
 export function getZoneInfo(posPct) {
-  if (posPct <= 25)  return { label: 'Zona favorable',  color: '#10b981', textColor: '#fff' }
-  if (posPct <= 75)  return { label: 'Zona intermedia', color: '#facc15', textColor: '#111' }
-  if (posPct <= 90)  return { label: 'Precaución',      color: '#f97316', textColor: '#fff' }
-  return                    { label: 'Zona crítica',    color: '#ef4444', textColor: '#fff' }
+  if (!Number.isFinite(posPct)) return { label: 'Sin cotización', color: '#64748b', textColor: '#fff' }
+  if (posPct <= 25) return { label: 'Zona favorable', color: '#10b981', textColor: '#fff' }
+  if (posPct <= 75) return { label: 'Zona intermedia', color: '#facc15', textColor: '#111' }
+  if (posPct <= 90) return { label: 'Precaución', color: '#f97316', textColor: '#fff' }
+  return { label: 'Zona crítica', color: '#ef4444', textColor: '#fff' }
 }

@@ -1,35 +1,23 @@
-import React, { useEffect, useRef } from 'react'
-import { Chart, registerables } from 'chart.js'
-import { getLast12IPC, calcIpcStats } from '../utils/format'
+import React, { useEffect, useMemo, useRef } from 'react'
+import { Chart } from './chartRuntime'
+import { getLast12IPC, mergeIpcHistory } from '../utils/format'
 
-Chart.register(...registerables)
-
-export default function InflacionChart({ ipcHistory, liveInflation }) {
+export default function InflacionChart({ ipcHistory, liveInflation, theme }) {
   const canvasRef = useRef(null)
   const chartRef  = useRef(null)
+  const last12 = useMemo(
+    () => getLast12IPC(mergeIpcHistory(ipcHistory, liveInflation)),
+    [ipcHistory, liveInflation],
+  )
 
   useEffect(() => {
-    if (!ipcHistory) return
-
-    // Merge live inflation data safely
-    const merged = { ...ipcHistory }
-    if (Array.isArray(liveInflation)) {
-      liveInflation.forEach(item => {
-        if (item?.fecha && typeof item.fecha === 'string' && item?.valor != null) {
-          merged[item.fecha.substring(0, 7)] = item.valor > 1 ? item.valor / 100 : item.valor
-        }
-      })
-    }
-
-    const last12 = getLast12IPC(merged)
     if (!last12.length) return
 
-    const { lastMonth, avg12m, acum12m } = calcIpcStats(last12)
     const labels     = last12.map(d => d.label)
     const years      = last12.map(d => d.year)
     const dataPoints = last12.map(d => d.pct)
 
-    const isLight = document.documentElement.getAttribute('data-theme') === 'light'
+    const isLight = (theme || document.documentElement.getAttribute('data-theme')) === 'light'
     const textColor = isLight ? '#64748b' : '#94a3b8'
     const gridColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'
 
@@ -57,7 +45,7 @@ export default function InflacionChart({ ipcHistory, liveInflation }) {
         }
         
         const p0 = xAxis.getPixelForTick(0)
-        const p1 = xAxis.getPixelForTick(1)
+        const p1 = years.length > 1 ? xAxis.getPixelForTick(1) : p0 + xAxis.width
         if (p0 == null || p1 == null || isNaN(p0) || isNaN(p1)) return
 
         const tickW = p1 - p0
@@ -133,6 +121,7 @@ export default function InflacionChart({ ipcHistory, liveInflation }) {
       plugins: [dataLabelsPlugin, yearGroupPlugin],
       options: {
         responsive: true,
+        animation: false,
         resizeDelay: 200,
         maintainAspectRatio: false,
         layout: { padding: { top: 22, bottom: 28 } },
@@ -167,8 +156,18 @@ export default function InflacionChart({ ipcHistory, liveInflation }) {
       },
     })
 
-    return () => chartRef.current?.destroy()
-  }, [ipcHistory, liveInflation])
+    return () => {
+      chartRef.current?.destroy()
+      chartRef.current = null
+    }
+  }, [last12, theme])
 
-  return <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
+  return (
+    <>
+      <canvas ref={canvasRef} role="img" aria-label={last12.length
+        ? `Inflación mensual: ${last12.map(month => `${month.label} ${month.year}: ${month.pct.toFixed(1)}%`).join('; ')}.`
+        : 'Sin datos de inflación disponibles.'} style={{ width: '100%', height: '100%' }} />
+      {!last12.length && <p className="chart-empty">Sin datos de inflación disponibles.</p>}
+    </>
+  )
 }

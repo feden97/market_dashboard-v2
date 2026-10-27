@@ -1,4 +1,5 @@
-import { EntityIcon, QUESTION_MARK_SVG } from '../utils/icons'
+import { EntityIcon } from '../utils/icons'
+import InfoTooltip from '../components/InfoTooltip'
 
 function TerminalRow({ name, rate, rateLabel = 'TNA', subLabel, pills = [], isBest, dateInfo, rateColor, tooltipText = '' }) {
   return (
@@ -11,12 +12,7 @@ function TerminalRow({ name, rate, rateLabel = 'TNA', subLabel, pills = [], isBe
           <div className="terminal-name" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             {name}
             {tooltipText && (
-              <div className="tooltip-container tooltip-right" style={{ cursor: 'help' }}>
-                {QUESTION_MARK_SVG}
-                <div className="tooltip-text" style={{ fontWeight: 600, textAlign: 'left', minWidth: '200px' }}>
-                  {tooltipText}
-                </div>
-              </div>
+              <InfoTooltip>{tooltipText}</InfoTooltip>
             )}
           </div>
           <div className="terminal-sub-label">{subLabel}</div>
@@ -91,7 +87,7 @@ export default function TabTasas({ tasas, displayMode }) {
                       />
                     )
                   })
-                : <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '30px', fontSize: '13px' }}>Cargando cuentas...</div>
+                : <div className="empty-state">No hay cuentas disponibles. Podés reintentar con “Actualizar datos”.</div>
               }
             </div>
           </div>
@@ -115,7 +111,7 @@ export default function TabTasas({ tasas, displayMode }) {
                       dateInfo={pf.date ? `Vigente desde: ${pf.date.split('-').reverse().join('/')}` : ''}
                     />
                   ))
-                : <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '30px', fontSize: '13px' }}>Cargando...</div>
+                : <div className="empty-state">No hay plazos fijos disponibles.</div>
               }
             </div>
           </div>
@@ -141,7 +137,7 @@ export default function TabTasas({ tasas, displayMode }) {
                       rateColor="var(--orange)"
                     />
                   ))
-                : <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '30px', fontSize: '13px' }}>Cargando FCI...</div>
+                : <div className="empty-state">No hay datos suficientes para calcular los rendimientos de FCI.</div>
               }
             </div>
           </div>
@@ -182,7 +178,7 @@ export default function TabTasas({ tasas, displayMode }) {
                         </div>
                       </td>
                       {yields.entities.map((ent, entIdx) => {
-                        const rate = yields.rateMap[ent][coin]
+                        const rate = yields.rateMap[ent]?.[coin] ?? null
                         const isBest = rate !== null && rate === yields.bestPerCoin[coin]
                         const dir = entIdx >= 3 ? 'tooltip-left' : 'tooltip-right'
 
@@ -192,12 +188,9 @@ export default function TabTasas({ tasas, displayMode }) {
                           const showTooltip = yields.tiersMap && yields.tiersMap[ent] && yields.tiersMap[ent][coin]
                           if (showTooltip) {
                             tooltipHtml = (
-                              <div className={`tooltip-container ${dir}`} style={{ marginLeft: 4, cursor: 'help' }}>
-                                {QUESTION_MARK_SVG}
-                                <div className="tooltip-text" style={{ fontWeight: 600, textAlign: 'left', minWidth: '200px' }}>
-                                  Tasa máxima detectada.<br/>El rendimiento varía según condiciones de la plataforma.
-                                </div>
-                              </div>
+                              <InfoTooltip direction={dir}>
+                                Tasa máxima detectada. El rendimiento varía según condiciones de la plataforma.
+                              </InfoTooltip>
                             )
                           }
                           const containerCls = showTooltip ? 'apy-container has-tooltip' : 'apy-container'

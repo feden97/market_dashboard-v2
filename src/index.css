@@ -881,6 +881,17 @@ body {
     transform: translateX(0) translateY(0);
 }
 
+.tooltip-container:focus-within {
+    color: var(--text-main);
+    z-index: 5000;
+}
+
+.tooltip-container:focus-within .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+}
+
 /* Left-anchored */
 .tooltip-left .tooltip-text {
     left: auto;
