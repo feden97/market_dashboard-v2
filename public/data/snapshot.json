@@ -1,5 +1,5 @@
 {
-  "built_at": "2026-10-31T23:33:50.023512Z",
+  "built_at": "2026-11-01T23:47:53.979078Z",
   "argentina_macro": {
     "ipc_history": {
       "1943-03": 0.016,
@@ -1011,7 +1011,10 @@
       "fecha": "30-10-2026",
       "variacion": 6.21
     },
-    "holidays": [],
+    "holidays": [
+      "09-11-2026 - Visita del papa León XIV",
+      "23-11-2026 - Día de la Soberanía Nacional (20/11)"
+    ],
     "full_holidays": [
       "2026-01-01",
       "2026-02-16",
@@ -3765,6 +3768,15 @@
     },
     {
       "date": "31-10-2026",
+      "ccl": 1658.5,
+      "mep": 1575.0,
+      "blue": 1565.0,
+      "oficial": 1560.0,
+      "usdt": 1635.0,
+      "mayorista": 1534.0
+    },
+    {
+      "date": "01-11-2026",
       "ccl": 1658.5,
       "mep": 1575.0,
       "blue": 1565.0,
