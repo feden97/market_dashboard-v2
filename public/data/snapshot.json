@@ -1,5 +1,5 @@
 {
-  "built_at": "2026-11-03T02:33:01.946857Z",
+  "built_at": "2026-11-04T00:48:05.572658Z",
   "argentina_macro": {
     "ipc_history": {
       "1943-03": 0.016,
@@ -1007,9 +1007,9 @@
       "2026-09": 0.019
     },
     "riesgo_pais": {
-      "valor": 787,
-      "fecha": "30-10-2026",
-      "variacion": 6.21
+      "valor": 805,
+      "fecha": "02-11-2026",
+      "variacion": 2.29
     },
     "holidays": [
       "09-11-2026 - Visita del papa León XIV",
@@ -3795,12 +3795,21 @@
     },
     {
       "date": "03-11-2026",
-      "ccl": 1658.5,
-      "mep": 1575.0,
+      "ccl": 1670.0,
+      "mep": 1579.9,
       "blue": 1565.0,
-      "oficial": 1560.0,
+      "oficial": 1565.0,
       "usdt": 1649.0,
-      "mayorista": 1534.0
+      "mayorista": 1545.5
+    },
+    {
+      "date": "04-11-2026",
+      "ccl": 1670.0,
+      "mep": 1579.9,
+      "blue": 1565.0,
+      "oficial": 1565.0,
+      "usdt": 1654.0,
+      "mayorista": 1545.5
     }
   ]
 }
