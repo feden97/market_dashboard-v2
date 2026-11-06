@@ -1,7 +1,8 @@
 import { fetchJson, finiteNumber, isRecord } from './http.js'
 
 export const FIWIND_API = 'https://criptoya.com/api/fiwind/usdt/usd'
-export const FIWIND_INTERVAL = 15 * 60 * 1000
+export const FIWIND_INTERVAL = 60 * 60 * 1000
+export const FIWIND_REFRESH = 5 * 60 * 1000
 
 /** Whole thousandths on the axis prevent duplicate labels after rounding. */
 export function fiwindAxisRange(quotes) {
@@ -51,7 +52,7 @@ export async function loadFiwindLive({ signal, request = fetchJson, now = Date.n
 
 export async function loadFiwindHistory({ url, signal, request = fetchJson, now = Date.now() }) {
   const endpoint = new URL(url, globalThis.location?.href || 'http://localhost')
-  endpoint.searchParams.set('v', String(Math.floor(now / FIWIND_INTERVAL)))
+  endpoint.searchParams.set('v', String(Math.floor(now / FIWIND_REFRESH)))
   const value = await request(endpoint.href, { signal })
   return { data: normalizeFiwindHistory(value, now) }
 }
@@ -63,9 +64,11 @@ export function fiwindView(history = [], live = null, hours = 24, now = Date.now
   // The graph contains durable observations only. Live polling never invents history.
   const quotes = history.filter(row => row.time >= cutoff && row.time <= now / 1000)
   const bids = quotes.map(row => row.bid)
+  const fresh = Boolean(latest && now - latest.time * 1000 <= 180_000)
+  const chartQuotes = fresh && latest === live && latest.time > (quotes.at(-1)?.time ?? 0)
+    ? [...quotes, { ...latest, live: true }] : quotes
   return {
-    latest, quotes,
-    fresh: Boolean(latest && now - latest.time * 1000 <= 180_000),
+    latest, quotes, chartQuotes, fresh,
     min: bids.length ? Math.min(...bids) : null,
     max: bids.length ? Math.max(...bids) : null,
     premium: latest ? (latest.bid - 1) * 100 : null,
@@ -80,7 +83,7 @@ export function fiwindChartPoints(quotes, key) {
     if (previous && quote.time - previous.time > FIWIND_INTERVAL / 1000 * 1.5) {
       points.push({ x: (previous.time + quote.time) * 500, y: null })
     }
-    points.push({ x: quote.time * 1000, y: quote[key] })
+    points.push({ x: quote.time * 1000, y: quote[key], ...(quote.live ? { live: true } : {}) })
   })
   return points
 }

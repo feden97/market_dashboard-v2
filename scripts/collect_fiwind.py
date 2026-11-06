@@ -1,7 +1,7 @@
 """Collect the same Fiwind USDT/USD bid/ask used by the Telegram bot.
 
 Run independently of the daily macro snapshot. A failed/stale API response
-never overwrites history, and reruns in the same 15-minute bucket are idempotent.
+never overwrites history, and reruns in the same hourly bucket are idempotent.
 """
 import argparse
 import json
@@ -12,7 +12,7 @@ from pathlib import Path
 import requests
 
 API_URL = "https://criptoya.com/api/fiwind/usdt/usd"
-INTERVAL_SECONDS = 900
+INTERVAL_SECONDS = 3600
 
 
 def number(value):
@@ -46,16 +46,16 @@ def append_quote(history, payload, now):
     if not isinstance(rows, list):
         raise ValueError("Invalid history; refusing to replace it")
     rows = [normalize_quote(row, now, fresh=False) for row in rows]
-    buckets = {}
-    for row in sorted(rows, key=lambda row: row["time"]):
-        buckets.setdefault(row["time"] // INTERVAL_SECONDS, row)
+    # Preserve all earlier samples, including the original 15-minute history.
+    by_time = {row["time"]: row for row in rows}
     bucket = quote["time"] // INTERVAL_SECONDS
     if rows and quote["time"] < max(row["time"] for row in rows):
         raise ValueError("Quote precedes the last stored observation")
     # Keep the first actual observation in each bucket; never backfill missed runs.
-    buckets.setdefault(bucket, quote)
-    quotes = [buckets[key] for key in sorted(buckets)]
-    return {**history, "updated_at": quotes[-1]["time"], "quotes": quotes}
+    if not any(row["time"] // INTERVAL_SECONDS == bucket for row in rows):
+        by_time[quote["time"]] = quote
+    quotes = [by_time[key] for key in sorted(by_time)]
+    return {**history, "interval_seconds": INTERVAL_SECONDS, "updated_at": quotes[-1]["time"], "quotes": quotes}
 
 
 def collect(output, now=None, request=requests.get):

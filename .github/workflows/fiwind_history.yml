@@ -7,7 +7,7 @@ on:
       - '.github/workflows/fiwind_history.yml'
       - 'scripts/collect_fiwind.py'
   schedule:
-    - cron: '7,22,37,52 * * * *'
+    - cron: '17 * * * *'
   workflow_dispatch:
 
 permissions:

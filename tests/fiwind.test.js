@@ -45,12 +45,12 @@ test('history validates provenance and sorts/deduplicates observations while kee
   assert.throws(() => normalizeFiwindHistory({}, now), /formato/)
 })
 
-test('history URL preserves custom paths and refreshes its cache key every 15 minutes', async () => {
+test('history URL preserves custom paths and refreshes its cache key every 5 minutes', async () => {
   const controller = new AbortController()
   const result = await loadFiwindHistory({ url: 'https://data.test/fiwind.json?key=value', now, signal: controller.signal, request: async (url, options) => {
     const parsed = new URL(url)
     assert.equal(parsed.searchParams.get('key'), 'value')
-    assert.equal(parsed.searchParams.get('v'), String(Math.floor(now / 900_000)))
+    assert.equal(parsed.searchParams.get('v'), String(Math.floor(now / 300_000)))
     assert.equal(options.signal, controller.signal)
     return history([quote()])
   } })
@@ -61,6 +61,8 @@ test('current quote chooses the newest source but the chart contains durable sam
   const rows = [quote(25 * 3600, 1.02), quote(3600, 1.03), quote(900, 1.036)]
   const view = fiwindView(rows, quote(30, 1.037), 24, now)
   assert.deepEqual(view.quotes, rows.slice(1))
+  assert.deepEqual(view.chartQuotes.at(-1), { ...quote(30, 1.037), live: true })
+  assert.equal(view.chartQuotes.length, view.quotes.length + 1)
   assert.equal(view.latest.bid, 1.037)
   assert.equal(view.min, 1.03)
   assert.equal(view.max, 1.036)
@@ -69,12 +71,13 @@ test('current quote chooses the newest source but the chart contains durable sam
   const fallback = fiwindView(rows, quote(1800), 24, now)
   assert.deepEqual(fallback.latest, rows.at(-1))
   assert.equal(fallback.fresh, false)
+  assert.deepEqual(fallback.chartQuotes, fallback.quotes)
   assert.equal(fiwindView([], null, 24, now).min, null)
   assert.equal(fiwindView(rows, null, 168, now).quotes.length, 3)
 })
 
 test('time scale shows outages without interpolating across missing scheduled samples', () => {
-  const rows = [quote(4500), quote(3600), quote()]
+  const rows = [quote(10800), quote(9900), quote()]
   const points = fiwindChartPoints(rows, 'bid')
   assert.equal(points.length, 4)
   assert.equal(points[2].y, null)

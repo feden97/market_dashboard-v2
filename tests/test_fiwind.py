@@ -14,14 +14,21 @@ def quote(age=0, bid=1.035, ask=1.04):
 
 
 class FiwindCollectionTests(unittest.TestCase):
+    def test_hourly_migration_preserves_older_fifteen_minute_samples(self):
+        first = append_quote(None, quote(), NOW)
+        first["quotes"].append(quote(-900))
+        updated = append_quote(first, quote(-3600), NOW + 3600)
+        self.assertEqual(updated["quotes"], [quote(), quote(-900), quote(-3600)])
+        self.assertEqual(updated["interval_seconds"], 3600)
+
     def test_new_history_and_idempotent_bucket(self):
         first = append_quote(None, quote(), NOW)
         self.assertEqual(first["source"], API_URL)
-        self.assertEqual(first["interval_seconds"], 900)
+        self.assertEqual(first["interval_seconds"], 3600)
         again = append_quote(first, quote(-30, 1.036), NOW + 30)
         self.assertEqual(again, first)
-        later = append_quote(first, quote(-900), NOW + 900)
-        self.assertEqual(later["quotes"], [quote(), quote(-900)])
+        later = append_quote(first, quote(-3600), NOW + 3600)
+        self.assertEqual(later["quotes"], [quote(), quote(-3600)])
 
     def test_does_not_backfill_missing_buckets_or_flat_prices(self):
         first = append_quote(None, quote(), NOW)

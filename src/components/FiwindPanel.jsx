@@ -58,13 +58,14 @@ export default function FiwindPanel({ state, theme }) {
       </div>
     </div>
 
-    <FiwindChart quotes={view.quotes} hours={hours} theme={theme} now={now} />
+    <FiwindChart quotes={view.chartQuotes} hours={hours} theme={theme} now={now} />
 
     <div className="fiwind-range">
       <span>Mín. venta <strong>{price(view.min)}</strong></span>
       <span>Máx. venta <strong>{price(view.max)}</strong></span>
-      <span>Cada 15 min · ART</span>
+      <span>{view.chartQuotes.at(-1)?.live ? 'Último punto: actual · ' : ''}Guardado cada hora · ART</span>
     </div>
+    {history?.length > 0 && now - history.at(-1).time * 1000 > 2 * 3_600_000 && <p className="fiwind-notice" role="status">Histórico demorado. Última muestra guardada: {date(history.at(-1).time)} · ART. El punto actual se muestra por separado y no reemplaza las muestras faltantes.</p>}
     {state.history.error && <p className="fiwind-notice" role="status">No se pudo actualizar el histórico.{history?.length ? ' Se conservan las muestras cargadas.' : ' Todavía no hay muestras disponibles.'}</p>}
     <details className="fiwind-details">
       <summary>Detalle y fuente</summary>
@@ -73,7 +74,7 @@ export default function FiwindPanel({ state, theme }) {
       {state.history.loading ? <p role="status">Cargando histórico…</p>
         : state.history.error ? <p className="fiwind-notice" role="status">No se pudo consultar el histórico guardado.{history?.length ? ' Se conservan las muestras cargadas.' : ' Estará disponible después de la primera recolección automática.'}</p>
           : <p>{history?.length ? `Registro desde ${date(history[0].time)} · ART. Última muestra: ${date(history.at(-1).time)} · ART.` : 'El histórico empieza con la primera muestra; no se reconstruyen cotizaciones pasadas.'}</p>}
-      <p>Fuente: <a href="https://docs.criptoya.com/argentina/" target="_blank" rel="noreferrer">Fiwind vía CriptoYa</a>, precios bid/ask como en el bot. La cotización se consulta cada minuto con el dashboard visible. El guardado automático puede tener demoras; los huecos no se interpolan.</p>
+      <p>Fuente: <a href="https://docs.criptoya.com/argentina/" target="_blank" rel="noreferrer">Fiwind vía CriptoYa</a>, precios bid/ask como en el bot. La cotización se consulta cada 5 minutos con el dashboard visible. El guardado automático puede tener demoras; los huecos no se interpolan.</p>
     </div>
     </details>
   </section>

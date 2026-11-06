@@ -18,8 +18,8 @@ export default function FiwindChart({ quotes, theme, hours, now }) {
     chartRef.current = new Chart(canvasRef.current, {
       type: 'line',
       data: { datasets: [
-        { label: 'Venta', data: [], borderColor: light ? '#078347' : '#00ff6a', backgroundColor: light ? '#078347' : '#00ff6a' },
-        { label: 'Compra', data: [], borderColor: light ? '#5362cf' : '#929dff', backgroundColor: light ? '#5362cf' : '#929dff' },
+        { label: 'Venta', data: [], segment: { borderDash: ctx => ctx.p1.raw.live ? [4, 4] : [] }, borderColor: light ? '#078347' : '#00ff6a', backgroundColor: light ? '#078347' : '#00ff6a' },
+        { label: 'Compra', data: [], segment: { borderDash: ctx => ctx.p1.raw.live ? [4, 4] : [] }, borderColor: light ? '#5362cf' : '#929dff', backgroundColor: light ? '#5362cf' : '#929dff' },
       ] },
       options: {
         responsive: true, maintainAspectRatio: false, animation: false,
@@ -31,7 +31,7 @@ export default function FiwindChart({ quotes, theme, hours, now }) {
           tooltip: {
             callbacks: {
               title: items => items[0] ? dateLabel(items[0].parsed.x, true) + ' · ART' : '',
-              label: item => `${item.dataset.label}: ${item.parsed.y?.toLocaleString('es-AR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} USD`,
+              label: item => `${item.dataset.label}${item.raw.live ? ' · actual, sin guardar' : ''}: ${item.parsed.y?.toLocaleString('es-AR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} USD`,
             },
           },
         },
@@ -61,13 +61,13 @@ export default function FiwindChart({ quotes, theme, hours, now }) {
     })
     chart.data.datasets[0].data = fiwindChartPoints(quotes, 'bid')
     chart.data.datasets[1].data = fiwindChartPoints(quotes, 'ask')
-    chart.data.datasets[0].pointRadius = quotes.length === 1 ? 4 : 0
-    chart.data.datasets[1].pointRadius = quotes.length === 1 ? 4 : 0
+    chart.data.datasets[0].pointRadius = ctx => ctx.raw?.live || quotes.length === 1 ? 4 : 0
+    chart.data.datasets[1].pointRadius = ctx => ctx.raw?.live || quotes.length === 1 ? 4 : 0
     chart.update('none')
   }, [quotes, hours, now, theme])
 
   return <div className="fiwind-chart">
-    <canvas ref={canvasRef} role="img" aria-label={`Histórico Fiwind: venta y compra de USDT en USD. ${quotes.length} muestras en las últimas ${hours} horas.`} />
+    <canvas ref={canvasRef} role="img" aria-label={`Histórico Fiwind: venta y compra de USDT en USD. ${quotes.length} observaciones en las últimas ${hours} horas.`} />
     {!quotes.length && <p className="chart-empty">Todavía no hay muestras guardadas en este período.</p>}
   </div>
 }
