@@ -1,13 +1,27 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  FIWIND_API, fiwindChartPoints, fiwindView, loadFiwindHistory, loadFiwindLive,
+  FIWIND_API, fiwindAxisRange, fiwindChartPoints, fiwindView, loadFiwindHistory, loadFiwindLive,
   normalizeFiwindHistory, normalizeFiwindQuote,
 } from '../src/utils/fiwind.js'
 
 const now = Date.parse('2026-11-06T15:00:00Z')
 const quote = (secondsAgo = 0, bid = 1.035, ask = 1.04) => ({ time: now / 1000 - secondsAgo, bid, ask })
 const history = quotes => ({ version: 1, source: FIWIND_API, interval_seconds: 900, quotes })
+
+test('Fiwind axis covers both prices with distinct three-decimal ticks, even for flat data', () => {
+  for (const [bid, ask] of [[1.055, 1.063], [1.055, 1.055], [1.0551, 1.0552], [0.8, 1.4]]) {
+    const { min, max, stepSize } = fiwindAxisRange([quote(0, bid, ask)])
+    assert.ok(min < bid && max > ask)
+    assert.ok(stepSize >= 0.001)
+    const labels = []
+    for (let value = min; value <= max + 1e-9; value += stepSize) labels.push(value.toFixed(3))
+    assert.equal(new Set(labels).size, labels.length)
+    assert.ok(labels.length <= 8)
+  }
+  assert.equal(fiwindAxisRange([quote(0, 1.055, 1.063)]).stepSize, 0.002)
+  assert.equal(fiwindAxisRange([]).min, undefined)
+})
 
 test('Fiwind uses USD bid/ask as in the bot, without inverting them or using ARS/total prices', async () => {
   const result = await loadFiwindLive({ now, request: async url => {

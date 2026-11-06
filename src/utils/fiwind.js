@@ -3,6 +3,22 @@ import { fetchJson, finiteNumber, isRecord } from './http.js'
 export const FIWIND_API = 'https://criptoya.com/api/fiwind/usdt/usd'
 export const FIWIND_INTERVAL = 15 * 60 * 1000
 
+/** Whole thousandths on the axis prevent duplicate labels after rounding. */
+export function fiwindAxisRange(quotes) {
+  if (!quotes.length) return { min: undefined, max: undefined, stepSize: undefined }
+  const values = quotes.flatMap(quote => [quote.bid, quote.ask])
+  const low = Math.min(...values)
+  const high = Math.max(...values)
+  const desired = Math.max(1, Math.ceil((high - low) * 1000 / 4 - 1e-9))
+  const magnitude = 10 ** Math.floor(Math.log10(desired))
+  const step = [1, 2, 5, 10].map(value => value * magnitude).find(value => value >= desired)
+  return {
+    min: (Math.floor(low * 1000 / step + 1e-9) - 1) * step / 1000,
+    max: (Math.ceil(high * 1000 / step - 1e-9) + 1) * step / 1000,
+    stepSize: step / 1000,
+  }
+}
+
 export function normalizeFiwindQuote(value, now = Date.now(), fresh = false) {
   if (!isRecord(value)) return null
   const bid = finiteNumber(value.bid)

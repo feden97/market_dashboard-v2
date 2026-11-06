@@ -6,9 +6,9 @@
 .fiwind-status-label { font-size: 10px; }
 .fiwind-status-label.is-live::before { content: ''; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--green); margin-right: 6px; }
 .fiwind-quotes { display: flex; flex-wrap: wrap; gap: 20px 40px; margin: 22px 0; }
-.fiwind-quote { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+.fiwind-quote { display: flex; align-items: flex-start; flex-direction: column; gap: 6px; }
 .fiwind-quote > span { color: var(--text-muted); font-size: 12px; }
-.fiwind-price { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-main); letter-spacing: -.5px; white-space: nowrap; }
+.fiwind-price { font-size: 30px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-main); letter-spacing: -.5px; white-space: nowrap; }
 .fiwind-price small { color: var(--text-muted); font-size: 10px; font-weight: 400; letter-spacing: 0; }
 .fiwind-notice { color: var(--orange); font-size: 11px; line-height: 1.6; }
 .fiwind-history-heading > span { color: var(--text-muted); font-size: 10px; }
@@ -28,3 +28,10 @@
   .fiwind-quote { flex-direction: column; gap: 4px; }
   .fiwind-range > span:last-child { margin-left: 0; }
 }
+
+.fiwind-quote > small { color: var(--text-muted); font-size: 11px; line-height: 1.5; }
+.fiwind-bid .fiwind-price { color: var(--green); }
+.fiwind-ask .fiwind-price { color: #929dff; }
+[data-theme="light"] .fiwind-ask .fiwind-price { color: #5362cf; }
+.fiwind-spread { color: var(--text-muted); font-size: 11px; margin: -8px 0 22px; }
+.fiwind-spread strong { margin-left: 6px; font-weight: 500; color: var(--text-main); font-variant-numeric: tabular-nums; }

@@ -4,7 +4,7 @@ import { fiwindView } from '../utils/fiwind.js'
 import './fiwind.css'
 
 const PERIODS = [[24, '24 h'], [168, '7 días'], [720, '30 días'], [2160, '90 días']]
-const price = value => value == null ? '—' : value.toLocaleString('es-AR', { minimumFractionDigits: 4, maximumFractionDigits: 4 })
+const price = value => value == null ? '—' : value.toLocaleString('es-AR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })
 const percent = value => value == null ? '—' : `${value > 0 ? '+' : ''}${value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`
 const date = time => new Date(time * 1000).toLocaleString('es-AR', {
   timeZone: 'America/Argentina/Buenos_Aires', day: '2-digit', month: '2-digit', year: 'numeric',
@@ -36,14 +36,18 @@ export default function FiwindPanel({ state, theme }) {
     <div className="fiwind-quotes">
       <div className="fiwind-quote fiwind-bid">
         <span>Vendés USDT</span>
-        <div className="fiwind-price">{price(latest?.bid)} <small>USD</small></div>
+        <div className="fiwind-price">{price(latest?.bid)} <small>USD / USDT</small></div>
+        <small>Recibís {price(latest ? latest.bid * 1000 : null)} USD por 1.000 USDT</small>
       </div>
-      <div className="fiwind-quote">
+      <div className="fiwind-quote fiwind-ask">
         <span>Comprás USDT</span>
-        <div className="fiwind-price">{price(latest?.ask)} <small>USD</small></div>
+        <div className="fiwind-price">{price(latest?.ask)} <small>USD / USDT</small></div>
+        <small>Pagás {price(latest ? latest.ask * 1000 : null)} USD por 1.000 USDT</small>
       </div>
 
     </div>
+
+    <p className="fiwind-spread">Diferencia compra / venta <strong>{price(latest ? latest.ask - latest.bid : null)} USD por USDT</strong></p>
 
     {state.live.error && <p className="fiwind-notice" role="status">No se pudo actualizar la cotización. {latest ? 'Se conserva el último dato con su fecha.' : 'Intentá actualizar nuevamente.'}</p>}
 

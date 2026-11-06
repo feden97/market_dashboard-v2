@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Chart } from './chartRuntime'
-import { fiwindChartPoints } from '../utils/fiwind.js'
+import { fiwindAxisRange, fiwindChartPoints } from '../utils/fiwind.js'
 
 const dateLabel = (time, full = false) => new Date(time).toLocaleString('es-AR', {
   timeZone: 'America/Argentina/Buenos_Aires', day: '2-digit', month: '2-digit',
@@ -31,13 +31,13 @@ export default function FiwindChart({ quotes, theme, hours, now }) {
           tooltip: {
             callbacks: {
               title: items => items[0] ? dateLabel(items[0].parsed.x, true) + ' · ART' : '',
-              label: item => `${item.dataset.label}: ${item.parsed.y?.toLocaleString('es-AR', { minimumFractionDigits: 4, maximumFractionDigits: 4 })} USD`,
+              label: item => `${item.dataset.label}: ${item.parsed.y?.toLocaleString('es-AR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} USD`,
             },
           },
         },
         scales: {
           x: { type: 'linear', border: { display: false }, grid: { display: false }, ticks: { color: text, maxTicksLimit: 5, font: { size: 10 }, callback: value => dateLabel(value) } },
-          y: { border: { display: false }, grid: { color: grid, drawTicks: false }, ticks: { padding: 8, maxTicksLimit: 4, font: { size: 10 }, color: text, callback: value => Number(value).toLocaleString('es-AR', { minimumFractionDigits: 3, maximumFractionDigits: 4 }) }, title: { display: false } },
+          y: { border: { display: false }, grid: { color: grid, drawTicks: false }, ticks: { padding: 10, autoSkip: false, font: { size: 11 }, color: text, callback: value => Number(value).toLocaleString('es-AR', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) }, title: { display: false } },
         },
       },
     })
@@ -51,6 +51,10 @@ export default function FiwindChart({ quotes, theme, hours, now }) {
     const start = end - hours * 3_600_000
     chart.options.scales.x.min = start
     chart.options.scales.x.max = end
+    const axis = fiwindAxisRange(quotes)
+    chart.options.scales.y.min = axis.min
+    chart.options.scales.y.max = axis.max
+    chart.options.scales.y.ticks.stepSize = axis.stepSize
     chart.options.scales.x.ticks.callback = value => new Date(value).toLocaleString('es-AR', {
       timeZone: 'America/Argentina/Buenos_Aires',
       ...(hours === 24 ? { hour: '2-digit', minute: '2-digit', hour12: false } : { day: '2-digit', month: '2-digit' }),
