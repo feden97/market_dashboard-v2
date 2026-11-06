@@ -53,6 +53,24 @@ python build_data.py --out-dir public/data
 
 La implementación vive en `scripts/build_data.py`; el archivo de la raíz es un acceso directo. El directorio predeterminado es `public/data`. Este comando sí consulta servicios externos y actualiza archivos de datos.
 
+## Canje Fiwind USDT/USD
+
+La sección **Dólares** incluye un panel propio con venta de USDT (`bid`, USD recibidos por USDT), compra (`ask`, USD pagados por USDT), prima de venta frente a la paridad y un histórico de 24 h, 7, 30 y 90 días. Usa `https://criptoya.com/api/fiwind/usdt/usd`, la misma fuente y los mismos campos del bot de Telegram; no usa el precio en pesos ni calcula un canje indirecto.
+
+- **Cotización:** consulta cada minuto con el dashboard visible. Una respuesta vencida por más de 3 minutos se rechaza y el último dato conserva su fecha.
+- **Persistencia:** `.github/workflows/fiwind_history.yml` consulta cada 15 minutos, todos los días, aunque el dashboard esté cerrado. Guarda únicamente precios públicos en `fiwind.json` de la rama `fiwind-history`, sin disparar una compilación del frontend por muestra. El cron corre en los minutos 7, 22, 37 y 52 para evitar el comienzo de cada hora; GitHub Actions puede demorarlo u omitir ejecuciones bajo carga, por lo que no garantiza un intervalo exacto.
+- **Histórico real:** empieza con la primera recolección. Se conserva el archivo completo, sin borrar registros antiguos; los filtros muestran ventanas hasta 90 días. Una ejecución fallida no rellena huecos ni sobrescribe el archivo. Los reintentos dentro del mismo bloque de 15 minutos no duplican muestras. El gráfico usa tiempo real y corta la línea ante huecos grandes.
+
+**Activación:** publicar estos cambios en la rama predeterminada del repositorio y habilitar GitHub Actions. Ejecutar una vez **Collect Fiwind USDT USD history → Run workflow**, o esperar al cron. La primera ejecución crea la rama de datos; el dashboard la consulta directamente, sin esperar una nueva publicación de Pages. El repositorio debe ser público para el acceso anónimo al archivo; para otro alojamiento, configurar `VITE_FIWIND_HISTORY_URL` con un JSON público compatible. No requiere tokens del bot, base de datos ni un servicio nuevo.
+
+Para recolectar localmente:
+
+```sh
+python scripts/collect_fiwind.py --output public/data/fiwind.json
+```
+
+Configurar `VITE_FIWIND_HISTORY_URL=/data/fiwind.json` en `.env` y reiniciar Vite. El comando toma **una** muestra; el guardado recurrente en producción depende del workflow, no de tener abierta la página. Si no existe el histórico remoto, el panel muestra su estado pendiente y permite consultar el precio actual.
+
 ## Proxy opcional
 
 Copiar `.env.example` a `.env` y configurar `VITE_PROXY_URL` con la URL completa de `/data`. Reiniciar Vite después de cambiar variables de entorno.
@@ -74,4 +92,4 @@ El proxy también funciona importado por un servidor WSGI. Cada proceso mantiene
 
 ## GitHub Pages
 
-El workflow de despliegue instala con `npm ci`, ejecuta pruebas, compila y verifica la PWA antes de publicar. Las pull requests tienen un workflow de validación con pruebas JavaScript y Python. El build genera un manifiesto de todos los JS/CSS y una revisión del worker para mantener coherente la caché entre versiones. Los datos se actualizan mediante el workflow diario existente.
+El workflow de despliegue instala con `npm ci`, ejecuta pruebas, compila y verifica la PWA antes de publicar. Las pull requests tienen un workflow de validación con pruebas JavaScript y Python. El build genera un manifiesto de todos los JS/CSS y una revisión del worker para mantener coherente la caché entre versiones. El snapshot macro usa el workflow diario existente; el histórico Fiwind tiene su propio workflow cada 15 minutos.

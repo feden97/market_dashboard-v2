@@ -4,6 +4,7 @@ import { EntityIcon } from '../utils/icons'
 import InfoTooltip from '../components/InfoTooltip'
 import SpreadChart from '../charts/SpreadChart'
 import BandasChart from '../charts/BandasChart'
+import FiwindPanel from '../components/FiwindPanel'
 
 const EXCHANGE_ICONS = {
   fiwind: `<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" style="width:20px;height:20px;border-radius:4px;"><rect width="18" height="18" style="fill:rgb(10,10,10);"></rect><g><path d="M7.92,9.58h-1.57c-.2,0-.36-.16-.36-.36s.16-.36.36-.36h1.57c.2,0,.36.16.36.36s-.16.36-.36.36ZM6.36,7.96c-.2,0-.36-.16-.36-.36s.16-.36.36-.36h2.05c.2,0,.36.16.36.36s-.16.36-.36.36h-2.05ZM8.7,11.48c-.19-.06-.3-.26-.24-.45l1.1-3.61c.06-.19.26-.3.45-.24.19.06.3.26.24.45l-1.1,3.61c-.06.19-.26.3-.45.24ZM11.89,7.63l-1.1,3.61c-.06.19-.26.3-.45.24-.19-.06-.3-.26-.24-.45l1.1-3.61c.06-.19.26-.3.45-.24.19.06.3.26.24.45Z" style="fill:rgb(239,180,29);"></path><path d="M9,14.01c-2.76,0-5-2.25-5-5.01s2.24-5.01,5-5.01,5,2.25,5,5.01-2.24,5.01-5,5.01ZM9,4.62c-2.41,0-4.37,1.96-4.37,4.37s1.96,4.37,4.37,4.37,4.37-1.96,4.37-4.37-1.96-4.37-4.37-4.37Z" style="fill:rgb(239,180,29);"></path></g></svg>`,
@@ -69,7 +70,7 @@ const DOLAR_ROWS = [
   { key: 'blue',    name: 'blue' },
 ]
 
-export default function TabDolares({ snapshot, liveData, bandas, historicalFiat, theme }) {
+export default function TabDolares({ snapshot, liveData, bandas, historicalFiat, theme, fiwind }) {
   const [base, setBase] = useState('usdt')
 
   const fiat = liveData?.fiat
@@ -214,6 +215,8 @@ export default function TabDolares({ snapshot, liveData, bandas, historicalFiat,
           />
         </div>
       </div>
+
+      <FiwindPanel state={fiwind} theme={theme} />
 
       {/* Bandas card */}
       <div className="macro-card" style={{ padding: '24px', marginTop: '24px' }}>

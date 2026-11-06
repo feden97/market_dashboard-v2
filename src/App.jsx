@@ -4,6 +4,7 @@ import DataStatus from './components/DataStatus'
 import { useSnapshot } from './hooks/useSnapshot'
 import { useLiveData } from './hooks/useLiveData'
 import { useTasasData } from './hooks/useTasasData'
+import { useFiwindData } from './hooks/useFiwindData'
 import { generateDatosBandas } from './utils/bandas'
 import { mergeIpcHistory } from './utils/format'
 import { buildDashboardData, getTabFromSearch } from './utils/dashboard'
@@ -19,6 +20,7 @@ export default function App() {
   const snapshotState = useSnapshot()
   const liveState = useLiveData()
   const tasas = useTasasData()
+  const fiwind = useFiwindData()
   const { snapshot } = snapshotState
   const liveData = liveState.data
 
@@ -53,7 +55,7 @@ export default function App() {
     if (refreshing) return
     setRefreshing(true)
     try {
-      await Promise.allSettled([snapshotState.refetch(), liveState.refetch(), tasas.refetch()])
+      await Promise.allSettled([snapshotState.refetch(), liveState.refetch(), tasas.refetch(), fiwind.refetch()])
     } finally {
       setRefreshing(false)
     }
@@ -70,7 +72,7 @@ export default function App() {
         <section id="dashboard-panel" className="tab-pane active" role="tabpanel" aria-labelledby={labelId} tabIndex={0} key={activeTab}>
           <Suspense fallback={<div className="loading-placeholder" role="status">Cargando sección…</div>}>
             {activeTab === 'resumen' && <TabResumen snapshot={snapshot} liveData={dashboardData} liveInflation={liveData?.liveInflation} theme={theme} />}
-            {activeTab === 'dolares' && <TabDolares snapshot={snapshot} liveData={dashboardData} bandas={bandas} historicalFiat={snapshot?.historical_fiat} theme={theme} />}
+            {activeTab === 'dolares' && <TabDolares snapshot={snapshot} liveData={dashboardData} bandas={bandas} historicalFiat={snapshot?.historical_fiat} theme={theme} fiwind={fiwind} />}
             {activeTab.startsWith('tasas') && <TabTasas tasas={tasas} displayMode={activeTab === 'tasas' ? 'pesos' : 'cripto'} />}
           </Suspense>
         </section>
