@@ -1,41 +1,30 @@
 .fiwind-panel { margin-top: 24px; padding: 24px; }
-.fiwind-heading, .fiwind-history-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
-.fiwind-eyebrow { color: var(--text-muted); font-size: 11px; letter-spacing: .14em; font-weight: 700; margin: 0 0 8px; }
-.fiwind-heading h2 { margin: 0; font-size: 26px; letter-spacing: -.6px; color: var(--text-main); }
-.fiwind-heading h2 span { color: var(--text-muted); font-weight: 400; margin: 0 6px; }
-.fiwind-subtitle { margin: 8px 0 0; font-size: 13px; color: var(--text-muted); }
-.fiwind-status { display: flex; flex-direction: column; align-items: flex-end; gap: 7px; font-size: 11px; color: var(--text-muted); }
-.fiwind-status-label { font-size: 12px; font-weight: 600; }
-.fiwind-status-label.is-live::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--green); margin-right: 7px; }
-.fiwind-quotes { margin: 24px 0; display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; }
-.fiwind-quote { padding: 20px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-.fiwind-quote + .fiwind-quote { border-left: 1px solid var(--border-color); }
+.fiwind-heading, .fiwind-history-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.fiwind-heading h2 { margin: 0; font-size: 16px; font-weight: 600; color: var(--text-main); }
+.fiwind-heading h2 span { margin-left: 8px; color: var(--text-muted); font-size: 13px; font-weight: 400; }
+.fiwind-status { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; font-size: 10px; color: var(--text-muted); }
+.fiwind-status-label { font-size: 10px; }
+.fiwind-status-label.is-live::before { content: ''; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--green); margin-right: 6px; }
+.fiwind-quotes { display: flex; flex-wrap: wrap; gap: 20px 40px; margin: 22px 0; }
+.fiwind-quote { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
 .fiwind-quote > span { color: var(--text-muted); font-size: 12px; }
-.fiwind-bid { background: var(--accent-glow); }
-.fiwind-price { font-size: clamp(24px, 2.5vw, 34px); font-weight: 650; font-variant-numeric: tabular-nums; color: var(--text-main); letter-spacing: -.8px; white-space: nowrap; }
-.fiwind-price small { color: var(--text-muted); font-size: 13px; letter-spacing: 0; font-weight: 500; }
-.fiwind-notice { color: var(--orange); font-size: 12px; line-height: 1.6; }
-.fiwind-history-heading { padding-top: 8px; }
-.fiwind-history-heading h3 { margin: 0 0 6px; font-size: 14px; color: var(--text-main); font-weight: 600; }
-.fiwind-history-heading span { font-size: 11px; color: var(--text-muted); }
-.fiwind-chart { height: 285px; position: relative; margin-top: 20px; }
-.fiwind-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; border-top: 1px solid var(--border-color); margin: 14px 0 0; padding: 20px 0 0; }
-.fiwind-summary dt { font-size: 11px; line-height: 1.5; color: var(--text-muted); }
-.fiwind-summary dd { margin: 6px 0 0; font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-main); }
-.fiwind-summary dd small { font-size: 11px; font-weight: 400; color: var(--text-muted); }
-.fiwind-footer { margin-top: 18px; color: var(--text-muted); font-size: 11px; line-height: 1.7; }
-.fiwind-footer p { margin: 5px 0 0; }
-.fiwind-footer a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.fiwind-price { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-main); letter-spacing: -.5px; white-space: nowrap; }
+.fiwind-price small { color: var(--text-muted); font-size: 10px; font-weight: 400; letter-spacing: 0; }
+.fiwind-notice { color: var(--orange); font-size: 11px; line-height: 1.6; }
+.fiwind-history-heading > span { color: var(--text-muted); font-size: 10px; }
+.fiwind-chart { height: 225px; position: relative; margin-top: 12px; }
+.fiwind-range { display: flex; gap: 8px 20px; flex-wrap: wrap; align-items: baseline; color: var(--text-muted); font-size: 11px; margin-top: 8px; }
+.fiwind-range strong { color: var(--text-main); font-weight: 500; font-variant-numeric: tabular-nums; margin-left: 4px; }
+.fiwind-range > span:last-child { margin-left: auto; font-size: 10px; }
+.fiwind-details { margin-top: 18px; font-size: 11px; color: var(--text-muted); line-height: 1.7; }
+.fiwind-details summary { cursor: pointer; width: fit-content; }
+.fiwind-details p { margin: 6px 0 0; }
+.fiwind-footer a { color: inherit; text-underline-offset: 3px; }
 .fiwind-panel button:disabled { opacity: .6; cursor: wait; }
-@media (max-width: 900px) {
-  .fiwind-quotes { grid-template-columns: 1fr 1fr; }
-}
 @media (max-width: 560px) {
   .fiwind-panel { padding: 16px; }
-  .fiwind-status { align-items: flex-start; }
-  .fiwind-quote { padding: 14px 10px; }
-  .fiwind-price { font-size: 24px; }
-  .fiwind-summary { grid-template-columns: 1fr 1fr; }
-  .fiwind-chart { height: 260px; }
-  .fiwind-history-heading .base-pills { flex-wrap: wrap; }
+  .fiwind-chart { height: 205px; }
+  .fiwind-quotes { gap: 14px 24px; }
+  .fiwind-quote { flex-direction: column; gap: 4px; }
+  .fiwind-range > span:last-child { margin-left: 0; }
 }

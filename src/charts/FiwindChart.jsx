@@ -18,8 +18,8 @@ export default function FiwindChart({ quotes, theme, hours, now }) {
     chartRef.current = new Chart(canvasRef.current, {
       type: 'line',
       data: { datasets: [
-        { label: 'Vendés USDT (bid)', data: [], borderColor: light ? '#078347' : '#00ff6a', backgroundColor: light ? '#078347' : '#00ff6a' },
-        { label: 'Comprás USDT (ask)', data: [], borderColor: light ? '#5362cf' : '#929dff', backgroundColor: light ? '#5362cf' : '#929dff' },
+        { label: 'Venta', data: [], borderColor: light ? '#078347' : '#00ff6a', backgroundColor: light ? '#078347' : '#00ff6a' },
+        { label: 'Compra', data: [], borderColor: light ? '#5362cf' : '#929dff', backgroundColor: light ? '#5362cf' : '#929dff' },
       ] },
       options: {
         responsive: true, maintainAspectRatio: false, animation: false,
@@ -27,7 +27,7 @@ export default function FiwindChart({ quotes, theme, hours, now }) {
         elements: { line: { borderWidth: 2, tension: 0, spanGaps: false }, point: { radius: 0, hoverRadius: 4, hitRadius: 10 } },
         interaction: { mode: 'nearest', axis: 'x', intersect: false },
         plugins: {
-          legend: { position: 'bottom', labels: { color: text, boxWidth: 18, boxHeight: 2, padding: 18 } },
+          legend: { position: 'bottom', labels: { color: text, boxWidth: 12, boxHeight: 2, padding: 12, font: { size: 11 } } },
           tooltip: {
             callbacks: {
               title: items => items[0] ? dateLabel(items[0].parsed.x, true) + ' · ART' : '',
@@ -36,8 +36,8 @@ export default function FiwindChart({ quotes, theme, hours, now }) {
           },
         },
         scales: {
-          x: { type: 'linear', grid: { color: grid }, ticks: { color: text, maxTicksLimit: 6, callback: value => dateLabel(value) } },
-          y: { grid: { color: grid }, ticks: { color: text, callback: value => Number(value).toLocaleString('es-AR', { minimumFractionDigits: 3, maximumFractionDigits: 4 }) }, title: { display: true, text: 'USD por 1 USDT', color: text } },
+          x: { type: 'linear', border: { display: false }, grid: { display: false }, ticks: { color: text, maxTicksLimit: 5, font: { size: 10 }, callback: value => dateLabel(value) } },
+          y: { border: { display: false }, grid: { color: grid, drawTicks: false }, ticks: { padding: 8, maxTicksLimit: 4, font: { size: 10 }, color: text, callback: value => Number(value).toLocaleString('es-AR', { minimumFractionDigits: 3, maximumFractionDigits: 4 }) }, title: { display: false } },
         },
       },
     })
@@ -51,6 +51,10 @@ export default function FiwindChart({ quotes, theme, hours, now }) {
     const start = end - hours * 3_600_000
     chart.options.scales.x.min = start
     chart.options.scales.x.max = end
+    chart.options.scales.x.ticks.callback = value => new Date(value).toLocaleString('es-AR', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      ...(hours === 24 ? { hour: '2-digit', minute: '2-digit', hour12: false } : { day: '2-digit', month: '2-digit' }),
+    })
     chart.data.datasets[0].data = fiwindChartPoints(quotes, 'bid')
     chart.data.datasets[1].data = fiwindChartPoints(quotes, 'ask')
     chart.data.datasets[0].pointRadius = quotes.length === 1 ? 4 : 0

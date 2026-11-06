@@ -22,9 +22,7 @@ export default function FiwindPanel({ state, theme }) {
   return <section className="macro-card fiwind-panel" aria-labelledby="fiwind-title">
     <div className="fiwind-heading">
       <div>
-        <p className="fiwind-eyebrow">FIWIND · CANJE</p>
-        <h2 id="fiwind-title">USDT <span aria-label="a y desde">↔</span> USD</h2>
-        <p className="fiwind-subtitle">El canje de todos los días, con su historia.</p>
+        <h2 id="fiwind-title">Fiwind <span>USDT / USD</span></h2>
       </div>
       <div className="fiwind-status">
         <span className={`fiwind-status-label${isLive ? ' is-live' : ''}`}>
@@ -37,14 +35,12 @@ export default function FiwindPanel({ state, theme }) {
 
     <div className="fiwind-quotes">
       <div className="fiwind-quote fiwind-bid">
-        <span>Vendés 1 USDT y recibís</span>
+        <span>Vendés USDT</span>
         <div className="fiwind-price">{price(latest?.bid)} <small>USD</small></div>
-        <span>Precio de venta · bid</span>
       </div>
       <div className="fiwind-quote">
-        <span>Comprás 1 USDT y pagás</span>
+        <span>Comprás USDT</span>
         <div className="fiwind-price">{price(latest?.ask)} <small>USD</small></div>
-        <span>Precio de compra · ask</span>
       </div>
 
     </div>
@@ -52,7 +48,7 @@ export default function FiwindPanel({ state, theme }) {
     {state.live.error && <p className="fiwind-notice" role="status">No se pudo actualizar la cotización. {latest ? 'Se conserva el último dato con su fecha.' : 'Intentá actualizar nuevamente.'}</p>}
 
     <div className="fiwind-history-heading">
-      <div><h3>Histórico del canje</h3><span>USD por USDT · muestras cada 15 min · hora argentina</span></div>
+      <span>USD por USDT</span>
       <div className="base-pills" aria-label="Período del histórico Fiwind">
         {PERIODS.map(([value, label]) => <button type="button" className={`base-pill${hours === value ? ' active' : ''}`} key={value} aria-pressed={hours === value} onClick={() => setHours(value)}>{label}</button>)}
       </div>
@@ -60,17 +56,21 @@ export default function FiwindPanel({ state, theme }) {
 
     <FiwindChart quotes={view.quotes} hours={hours} theme={theme} now={now} />
 
-    <dl className="fiwind-summary">
-      <div><dt>Mínimo de venta · período</dt><dd>{price(view.min)} <small>USD</small></dd></div>
-      <div><dt>Máximo de venta · período</dt><dd>{price(view.max)} <small>USD</small></dd></div>
-      <div><dt>Venta frente a paridad 1:1</dt><dd>{percent(view.premium)}</dd></div>
-      <div><dt>Muestras guardadas · período</dt><dd>{view.quotes.length.toLocaleString('es-AR')}</dd></div>
-    </dl>
+    <div className="fiwind-range">
+      <span>Mín. venta <strong>{price(view.min)}</strong></span>
+      <span>Máx. venta <strong>{price(view.max)}</strong></span>
+      <span>Cada 15 min · ART</span>
+    </div>
+    {state.history.error && <p className="fiwind-notice" role="status">No se pudo actualizar el histórico.{history?.length ? ' Se conservan las muestras cargadas.' : ' Todavía no hay muestras disponibles.'}</p>}
+    <details className="fiwind-details">
+      <summary>Detalle y fuente</summary>
+      <p>{view.quotes.length.toLocaleString('es-AR')} muestras en el período · Venta frente a paridad: {percent(view.premium)}</p>
     <div className="fiwind-footer">
       {state.history.loading ? <p role="status">Cargando histórico…</p>
         : state.history.error ? <p className="fiwind-notice" role="status">No se pudo consultar el histórico guardado.{history?.length ? ' Se conservan las muestras cargadas.' : ' Estará disponible después de la primera recolección automática.'}</p>
           : <p>{history?.length ? `Registro desde ${date(history[0].time)} · ART. Última muestra: ${date(history.at(-1).time)} · ART.` : 'El histórico empieza con la primera muestra; no se reconstruyen cotizaciones pasadas.'}</p>}
       <p>Fuente: <a href="https://docs.criptoya.com/argentina/" target="_blank" rel="noreferrer">Fiwind vía CriptoYa</a>, precios bid/ask como en el bot. La cotización se consulta cada minuto con el dashboard visible. El guardado automático puede tener demoras; los huecos no se interpolan.</p>
     </div>
+    </details>
   </section>
 }
