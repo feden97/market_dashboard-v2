@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  FIWIND_API, fiwindAxisRange, fiwindChartPoints, fiwindView, loadFiwindHistory, loadFiwindLive,
+  FIWIND_API, buildFiwindSeries, fiwindAxisRange, fiwindChartPoints, fiwindView, loadFiwindHistory, loadFiwindLive,
   normalizeFiwindHistory, normalizeFiwindQuote,
 } from '../src/utils/fiwind.js'
 
@@ -17,10 +17,58 @@ test('Fiwind axis covers both prices with distinct three-decimal ticks, even for
     const labels = []
     for (let value = min; value <= max + 1e-9; value += stepSize) labels.push(value.toFixed(3))
     assert.equal(new Set(labels).size, labels.length)
-    assert.ok(labels.length <= 8)
+    assert.ok(labels.length <= 7)
   }
-  assert.equal(fiwindAxisRange([quote(0, 1.055, 1.063)]).stepSize, 0.002)
+  assert.equal(fiwindAxisRange([quote(0, 1.055, 1.063)]).stepSize, 0.005)
+  const selected = fiwindAxisRange([quote(0, 1.055, 1.063)], 'bid')
+  assert.deepEqual(selected, { min: 1.054, max: 1.056, stepSize: 0.001 })
   assert.equal(fiwindAxisRange([]).min, undefined)
+})
+
+test('direction summaries distinguish stored samples from the fresh current point', () => {
+  const rows = [quote(25 * 3600, 1.01, 1.015), quote(3600, 1.03, 1.04), quote(900, 1.035, 1.042)]
+  const current = quote(30, 1.038, 1.045)
+  const bid = buildFiwindSeries(rows, current, 24, now, 'bid')
+  const ask = buildFiwindSeries(rows, current, 24, now, 'ask')
+  assert.equal(bid.savedCount, 2)
+  assert.equal(bid.observedCount, 3)
+  assert.equal(bid.savedMin, 1.03)
+  assert.equal(bid.savedMax, 1.035)
+  assert.equal(bid.observedMin, 1.03)
+  assert.equal(bid.observedMax, 1.038)
+  assert.equal(ask.observedMin, 1.04)
+  assert.equal(ask.observedMax, 1.045)
+  assert.ok(Math.abs(bid.change - 0.008) < 1e-12)
+  assert.ok(Math.abs(ask.changePercent - (1.045 / 1.04 - 1) * 100) < 1e-12)
+  assert.equal(bid.firstTime, rows[1].time)
+  assert.equal(bid.lastTime, current.time)
+  assert.equal(bid.lastSavedTime, rows[2].time)
+  assert.equal(bid.hasLivePoint, true)
+  assert.deepEqual(rows[2], quote(900, 1.035, 1.042))
+})
+
+test('sparse flat history retains gaps and never claims continuity or changes from one point', () => {
+  const rows = [quote(17 * 3600), quote(9 * 3600), quote(3600)]
+  const sparse = buildFiwindSeries(rows, quote(600), 24, now, 'bid')
+  assert.equal(sparse.gapCount, 2)
+  assert.equal(sparse.isFlat, true)
+  assert.equal(sparse.savedCount, 3)
+  assert.equal(sparse.observedCount, 3)
+  assert.equal(sparse.change, 0)
+  assert.equal(sparse.hasLivePoint, false)
+  const points = fiwindChartPoints(sparse.chartQuotes, 'bid')
+  assert.equal(points.filter(point => point.y === null).length, 2)
+  assert.equal(points.filter(point => point.y !== null).length, 3)
+  const single = buildFiwindSeries([], quote(30), 24, now)
+  assert.equal(single.observedCount, 1)
+  assert.equal(single.savedCount, 0)
+  assert.equal(single.change, null)
+  assert.equal(single.changePercent, null)
+  assert.equal(single.isFlat, false)
+  const empty = buildFiwindSeries([], quote(600), 24, now)
+  assert.equal(empty.observedCount, 0)
+  assert.equal(empty.observedMin, null)
+  assert.equal(empty.firstTime, null)
 })
 
 test('Fiwind uses USD bid/ask as in the bot, without inverting them or using ARS/total prices', async () => {

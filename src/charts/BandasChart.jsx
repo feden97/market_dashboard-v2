@@ -64,7 +64,7 @@ export default function BandasChart({ bandas, historicalFiat, fullHolidays, live
       options: {
         responsive: true,
         animation: false,
-        resizeDelay: 200,
+        resizeDelay: 0, // Avoid delayed resize callbacks after a theme/tab destroys this canvas.
         maintainAspectRatio: false,
         plugins: {
           legend: {

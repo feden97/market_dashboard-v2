@@ -4,20 +4,31 @@ export const FIWIND_API = 'https://criptoya.com/api/fiwind/usdt/usd'
 export const FIWIND_INTERVAL = 60 * 60 * 1000
 export const FIWIND_REFRESH = 5 * 60 * 1000
 
-/** Whole thousandths on the axis prevent duplicate labels after rounding. */
-export function fiwindAxisRange(quotes) {
-  if (!quotes.length) return { min: undefined, max: undefined, stepSize: undefined }
-  const values = quotes.flatMap(quote => [quote.bid, quote.ask])
-  const low = Math.min(...values)
-  const high = Math.max(...values)
-  const desired = Math.max(1, Math.ceil((high - low) * 1000 / 4 - 1e-9))
-  const magnitude = 10 ** Math.floor(Math.log10(desired))
-  const step = [1, 2, 5, 10].map(value => value * magnitude).find(value => value >= desired)
-  return {
-    min: (Math.floor(low * 1000 / step + 1e-9) - 1) * step / 1000,
-    max: (Math.ceil(high * 1000 / step - 1e-9) + 1) * step / 1000,
-    stepSize: step / 1000,
+/** At most seven distinct thousandth labels, with breathing room for flat series. */
+export function fiwindAxisRange(quotes, key = null) {
+  let low = Infinity
+  let high = -Infinity
+  for (const quote of quotes) {
+    for (const field of key === 'bid' || key === 'ask' ? [key] : ['bid', 'ask']) {
+      const value = finiteNumber(quote[field])
+      if (value !== null) { low = Math.min(low, value); high = Math.max(high, value) }
+    }
   }
+  if (!Number.isFinite(low)) return { min: undefined, max: undefined, stepSize: undefined }
+  const niceStep = desired => {
+    const magnitude = 10 ** Math.floor(Math.log10(desired))
+    return [1, 2, 5, 10].map(value => value * magnitude).find(value => value >= desired)
+  }
+  let step = niceStep(Math.max(1, Math.ceil((high - low) * 1000 / 4 - 1e-9)))
+  let min
+  let max
+  do {
+    min = (Math.floor(low * 1000 / step + 1e-9) - 1) * step
+    max = (Math.ceil(high * 1000 / step - 1e-9) + 1) * step
+    if (Math.round((max - min) / step) + 1 <= 7) break
+    step = niceStep(step + 1)
+  } while (true)
+  return { min: min / 1000, max: max / 1000, stepSize: step / 1000 }
 }
 
 export function normalizeFiwindQuote(value, now = Date.now(), fresh = false) {
@@ -72,6 +83,42 @@ export function fiwindView(history = [], live = null, hours = 24, now = Date.now
     min: bids.length ? Math.min(...bids) : null,
     max: bids.length ? Math.max(...bids) : null,
     premium: latest ? (latest.bid - 1) * 100 : null,
+  }
+}
+
+/** Direction-specific presentation statistics; live observations are never stored samples. */
+export function buildFiwindSeries(history = [], live = null, hours = 24, now = Date.now(), key = 'bid') {
+  key = key === 'ask' ? 'ask' : 'bid'
+  const view = fiwindView(history, live, hours, now)
+  const observed = view.chartQuotes
+  const saved = view.quotes
+  const values = observed.map(quote => quote[key])
+  const savedValues = saved.map(quote => quote[key])
+  const bounds = values => values.length
+    ? values.reduce((result, value) => ({ min: Math.min(result.min, value), max: Math.max(result.max, value) }), { min: Infinity, max: -Infinity })
+    : { min: null, max: null }
+  const observedBounds = bounds(values)
+  const savedBounds = bounds(savedValues)
+  const first = observed[0]
+  const last = observed.at(-1)
+  const change = observed.length >= 2 ? last[key] - first[key] : null
+  return {
+    ...view,
+    key,
+    savedCount: saved.length,
+    observedCount: observed.length,
+    savedMin: savedBounds.min,
+    savedMax: savedBounds.max,
+    observedMin: observedBounds.min,
+    observedMax: observedBounds.max,
+    firstTime: first?.time ?? null,
+    lastTime: last?.time ?? null,
+    lastSavedTime: history.at(-1)?.time ?? null,
+    change,
+    changePercent: change === null ? null : change / first[key] * 100,
+    isFlat: observed.length > 1 && observedBounds.min === observedBounds.max,
+    gapCount: observed.reduce((count, quote, index) => count + Number(index > 0 && quote.time - observed[index - 1].time > FIWIND_INTERVAL / 1000 * 1.5), 0),
+    hasLivePoint: Boolean(last?.live),
   }
 }
 

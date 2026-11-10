@@ -122,7 +122,7 @@ export default function InflacionChart({ ipcHistory, liveInflation, theme }) {
       options: {
         responsive: true,
         animation: false,
-        resizeDelay: 200,
+        resizeDelay: 0, // Avoid delayed resize callbacks after a theme/tab destroys this canvas.
         maintainAspectRatio: false,
         layout: { padding: { top: 22, bottom: 28 } },
         plugins: {

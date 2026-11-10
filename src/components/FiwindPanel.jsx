@@ -1,81 +1,75 @@
 import { useMemo, useState } from 'react'
 import FiwindChart from '../charts/FiwindChart'
-import { fiwindView } from '../utils/fiwind.js'
+import { buildFiwindSeries } from '../utils/fiwind.js'
 import './fiwind.css'
 
 const PERIODS = [[24, '24 h'], [168, '7 días'], [720, '30 días'], [2160, '90 días']]
 const price = value => value == null ? '—' : value.toLocaleString('es-AR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })
+const money = value => value == null ? '—' : value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const percent = value => value == null ? '—' : `${value > 0 ? '+' : ''}${value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`
-const date = time => new Date(time * 1000).toLocaleString('es-AR', {
-  timeZone: 'America/Argentina/Buenos_Aires', day: '2-digit', month: '2-digit', year: 'numeric',
+const date = (time, short = false) => time == null ? '—' : new Date(time * 1000).toLocaleString('es-AR', {
+  timeZone: 'America/Argentina/Buenos_Aires', ...(short ? {} : { day: '2-digit', month: '2-digit' }),
   hour: '2-digit', minute: '2-digit', hour12: false,
 })
+
 export default function FiwindPanel({ state, theme }) {
   const [hours, setHours] = useState(24)
+  const [side, setSide] = useState('bid')
   const now = Date.now()
-  const history = state.history.data
-  const view = useMemo(() => fiwindView(history ?? [], state.live.data, hours, now), [history, state.live.data, hours, now])
-  const latest = view.latest
-  const isLive = view.fresh && !state.live.error && latest === state.live.data
+  const history = state.history.data ?? []
+  const series = useMemo(() => buildFiwindSeries(history, state.live.data, hours, now, side), [history, state.live.data, hours, now, side])
+  const { latest } = series
+  const recent = series.fresh && !state.live.error && latest === state.live.data
   const refreshing = state.live.refreshing || state.history.refreshing
+  const delayed = series.lastSavedTime != null && now - series.lastSavedTime * 1000 > 2 * 3_600_000
+  const selling = side === 'bid'
 
-  return <section className="macro-card fiwind-panel" aria-labelledby="fiwind-title">
-    <div className="fiwind-heading">
-      <div>
-        <h2 id="fiwind-title">Fiwind <span>USDT / USD</span></h2>
+  return <section className="fiwind-panel" aria-labelledby="fiwind-title" data-side={side}>
+    <header className="fw-header">
+      <div className="fw-brand">
+        <span className="fw-mark" aria-hidden="true">⇄</span>
+        <div><p className="fw-eyebrow">FIWIND</p><h2 id="fiwind-title">Canje USDT / USD</h2></div>
       </div>
-      <div className="fiwind-status">
-        <span className={`fiwind-status-label${isLive ? ' is-live' : ''}`}>
-          {state.live.loading && !latest ? 'Consultando…' : isLive ? 'Cotización reciente' : latest ? 'Última cotización disponible' : 'Sin cotización disponible'}
-        </span>
-        <span>{latest ? `${date(latest.time)} · ART` : 'Fiwind vía CriptoYa'}</span>
-        <button type="button" className="base-pill" disabled={refreshing} onClick={state.refetch}>{refreshing ? 'Actualizando…' : 'Actualizar canje'}</button>
+      <div className="fw-update">
+        <div><span className={`fw-status${recent ? ' is-recent' : ''}`}>{state.live.loading && !latest ? 'Consultando' : recent ? 'Precio actualizado' : 'Último precio disponible'}</span>
+          <time dateTime={latest ? new Date(latest.time * 1000).toISOString() : undefined}>{latest ? `${date(latest.time)} · hora argentina` : 'Esperando cotización'}</time></div>
+        <button className="fw-refresh" type="button" onClick={state.refetch} disabled={refreshing} aria-label="Actualizar canje Fiwind" title="Actualizar cotización e histórico"><span aria-hidden="true">↻</span></button>
       </div>
-    </div>
+    </header>
 
-    <div className="fiwind-quotes">
-      <div className="fiwind-quote fiwind-bid">
-        <span>Vendés USDT</span>
-        <div className="fiwind-price">{price(latest?.bid)} <small>USD / USDT</small></div>
-        <small>Recibís {price(latest ? latest.bid * 1000 : null)} USD por 1.000 USDT</small>
+    <div className="fw-quotes" aria-label="Cotización actual y sentido del histórico">
+      {[['bid', 'Vendés USDT', 'Recibís', latest?.bid], ['ask', 'Comprás USDT', 'Pagás', latest?.ask]].map(([key, label, verb, value]) =>
+        <button key={key} type="button" className={`fw-quote fw-${key}`} aria-pressed={side === key} onClick={() => setSide(key)}>
+          <span className="fw-quote-label"><i aria-hidden="true" />{label}<span className="fw-selected">{side === key ? 'En el gráfico' : 'Ver histórico'} <span aria-hidden="true">↗</span></span></span>
+          <span className="fw-quote-number">{price(value)} <small>USD <span>/ 1 USDT</span></small></span>
+          <span className="fw-conversion">{verb} <strong>{money(value == null ? null : value * 1000)} USD</strong> por 1.000 USDT</span>
+        </button>)}
+    </div>
+    <div className="fw-spread"><span>Diferencia compra / venta</span><strong>{price(latest ? latest.ask - latest.bid : null)} <small>USD por USDT</small></strong><span className="fw-spread-note">Cotización informativa de Fiwind vía CriptoYa</span></div>
+    {state.live.error && <p className="fw-notice" role="status">La cotización no pudo actualizarse. Se muestra el último dato con su fecha.</p>}
+
+    <div className="fw-history">
+      <div className="fw-chart-header">
+        <div><h3>Evolución de {selling ? 'venta' : 'compra'}</h3><p>USD que {selling ? 'recibís' : 'pagás'} por cada USDT</p></div>
+        <div className="fw-periods" aria-label="Período del histórico Fiwind">{PERIODS.map(([value, label]) => <button type="button" key={value} aria-pressed={hours === value} onClick={() => setHours(value)}>{label}</button>)}</div>
       </div>
-      <div className="fiwind-quote fiwind-ask">
-        <span>Comprás USDT</span>
-        <div className="fiwind-price">{price(latest?.ask)} <small>USD / USDT</small></div>
-        <small>Pagás {price(latest ? latest.ask * 1000 : null)} USD por 1.000 USDT</small>
+      <dl className="fw-metrics">
+        <div><dt>Mínimo del período</dt><dd>{price(series.observedMin)}</dd></div>
+        <div><dt>Máximo del período</dt><dd>{price(series.observedMax)}</dd></div>
+        <div><dt>Cambio entre registros</dt><dd>{series.observedCount > 1 ? percent(series.changePercent) : '—'}{series.observedCount > 1 && series.isFlat && <small>Sin variaciones registradas</small>}</dd></div>
+      </dl>
+      <FiwindChart quotes={series.chartQuotes} side={side} hours={hours} theme={theme} now={now} />
+      <div className="fw-chart-caption"><span><i className="fw-dot" />{series.savedCount} {series.savedCount === 1 ? 'registro guardado' : 'registros guardados'} en el período</span>{series.hasLivePoint && <span><i className="fw-dot fw-live-dot" />Último precio · {date(latest.time, true)}</span>}<span>Hora argentina · USD / USDT</span></div>
+      {series.gapCount > 0 && <p className="fw-gap-note">Registros espaciados. Los puntos muestran las cotizaciones disponibles; los intervalos sin datos quedan sin unir.</p>}
+      {!series.savedCount && !state.history.loading && !state.history.error && <p className="fw-gap-note">Todavía no hay registros guardados en este período.{series.hasLivePoint ? ' El punto destacado es el precio actual.' : ''}</p>}
+    </div>
+    {(delayed || state.history.error) && <p className="fw-notice" role="status">{state.history.error ? 'No se pudo actualizar el histórico. Se conservan los datos disponibles.' : `Guardado demorado. Último registro: ${date(series.lastSavedTime)} (hora argentina).`}</p>}
+    <details className="fw-details">
+      <summary>Acerca de estos datos <span aria-hidden="true">+</span></summary>
+      <div className="fw-details-body">
+        <dl><div><dt>Último registro guardado</dt><dd>{date(series.lastSavedTime)} · ART</dd></div><div><dt>Consulta de precio</dt><dd>Cada 5 minutos con el dashboard visible</dd></div><div><dt>Guardado automático</dt><dd>Programado cada hora; puede demorarse</dd></div><div><dt>Histórico disponible desde</dt><dd>{date(history[0]?.time)} · ART</dd></div></dl>
+        <p>Fuente: <a href="https://docs.criptoya.com/argentina/" target="_blank" rel="noreferrer">Fiwind vía CriptoYa</a>. Venta = bid; compra = ask. Los valores se muestran con tres decimales. Mínimo, máximo y cambio consideran las observaciones disponibles, incluido el último precio cuando es reciente. No se reconstruyen precios en los intervalos sin datos.</p>
       </div>
-
-    </div>
-
-    <p className="fiwind-spread">Diferencia compra / venta <strong>{price(latest ? latest.ask - latest.bid : null)} USD por USDT</strong></p>
-
-    {state.live.error && <p className="fiwind-notice" role="status">No se pudo actualizar la cotización. {latest ? 'Se conserva el último dato con su fecha.' : 'Intentá actualizar nuevamente.'}</p>}
-
-    <div className="fiwind-history-heading">
-      <span>USD por USDT</span>
-      <div className="base-pills" aria-label="Período del histórico Fiwind">
-        {PERIODS.map(([value, label]) => <button type="button" className={`base-pill${hours === value ? ' active' : ''}`} key={value} aria-pressed={hours === value} onClick={() => setHours(value)}>{label}</button>)}
-      </div>
-    </div>
-
-    <FiwindChart quotes={view.chartQuotes} hours={hours} theme={theme} now={now} />
-
-    <div className="fiwind-range">
-      <span>Mín. venta <strong>{price(view.min)}</strong></span>
-      <span>Máx. venta <strong>{price(view.max)}</strong></span>
-      <span>{view.chartQuotes.at(-1)?.live ? 'Último punto: actual · ' : ''}Guardado cada hora · ART</span>
-    </div>
-    {history?.length > 0 && now - history.at(-1).time * 1000 > 2 * 3_600_000 && <p className="fiwind-notice" role="status">Histórico demorado. Última muestra guardada: {date(history.at(-1).time)} · ART. El punto actual se muestra por separado y no reemplaza las muestras faltantes.</p>}
-    {state.history.error && <p className="fiwind-notice" role="status">No se pudo actualizar el histórico.{history?.length ? ' Se conservan las muestras cargadas.' : ' Todavía no hay muestras disponibles.'}</p>}
-    <details className="fiwind-details">
-      <summary>Detalle y fuente</summary>
-      <p>{view.quotes.length.toLocaleString('es-AR')} muestras en el período · Venta frente a paridad: {percent(view.premium)}</p>
-    <div className="fiwind-footer">
-      {state.history.loading ? <p role="status">Cargando histórico…</p>
-        : state.history.error ? <p className="fiwind-notice" role="status">No se pudo consultar el histórico guardado.{history?.length ? ' Se conservan las muestras cargadas.' : ' Estará disponible después de la primera recolección automática.'}</p>
-          : <p>{history?.length ? `Registro desde ${date(history[0].time)} · ART. Última muestra: ${date(history.at(-1).time)} · ART.` : 'El histórico empieza con la primera muestra; no se reconstruyen cotizaciones pasadas.'}</p>}
-      <p>Fuente: <a href="https://docs.criptoya.com/argentina/" target="_blank" rel="noreferrer">Fiwind vía CriptoYa</a>, precios bid/ask como en el bot. La cotización se consulta cada 5 minutos con el dashboard visible. El guardado automático puede tener demoras; los huecos no se interpolan.</p>
-    </div>
     </details>
   </section>
 }

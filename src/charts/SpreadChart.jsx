@@ -99,7 +99,7 @@ export default function SpreadChart({ historicalFiat, liveData, base, setBase, t
       },
       options: {
         responsive: true,
-        resizeDelay: 200,
+        resizeDelay: 0, // Avoid delayed resize callbacks after a theme/tab destroys this canvas.
         maintainAspectRatio: false,
         animation: false, // Animacion nativa desactivada si cambiamos datos muy rápido
         plugins: {
