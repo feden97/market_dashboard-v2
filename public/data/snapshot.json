@@ -1,5 +1,5 @@
 {
-  "built_at": "2026-11-11T00:48:10.806619Z",
+  "built_at": "2026-11-12T01:58:38.297648Z",
   "argentina_macro": {
     "ipc_history": {
       "1943-03": 0.016,
@@ -1007,9 +1007,9 @@
       "2026-09": 0.019
     },
     "riesgo_pais": {
-      "valor": 873,
-      "fecha": "09-11-2026",
-      "variacion": -7.03
+      "valor": 860,
+      "fecha": "10-11-2026",
+      "variacion": -1.49
     },
     "holidays": [
       "23-11-2026 - Día de la Soberanía Nacional (20/11)"
@@ -3871,6 +3871,15 @@
       "blue": 1555.0,
       "oficial": 1570.0,
       "usdt": 1646.55,
+      "mayorista": 1545.5
+    },
+    {
+      "date": "12-11-2026",
+      "ccl": 1664.9,
+      "mep": 1587.9,
+      "blue": 1555.0,
+      "oficial": 1570.0,
+      "usdt": 1650.0,
       "mayorista": 1545.5
     }
   ]
