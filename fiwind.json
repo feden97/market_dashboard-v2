@@ -1,4 +1,4 @@
-{"version": 1, "source": "https://criptoya.com/api/fiwind/usdt/usd", "interval_seconds": 3600, "updated_at": 1795282245, "quotes": [
+{"version": 1, "source": "https://criptoya.com/api/fiwind/usdt/usd", "interval_seconds": 3600, "updated_at": 1795302946, "quotes": [
 {"time":1793991703,"bid":1.055,"ask":1.063},
 {"time":1794004645,"bid":1.049,"ask":1.06},
 {"time":1794019581,"bid":1.049,"ask":1.06},
@@ -51,5 +51,6 @@
 {"time":1795205929,"bid":1.067,"ask":1.08},
 {"time":1795227225,"bid":1.065,"ask":1.08},
 {"time":1795254764,"bid":1.065,"ask":1.08},
-{"time":1795282245,"bid":1.065,"ask":1.08}
+{"time":1795282245,"bid":1.065,"ask":1.08},
+{"time":1795302946,"bid":1.065,"ask":1.08}
 ]}
